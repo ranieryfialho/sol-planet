@@ -1,0 +1,60 @@
+name: Deploy Solar
+
+# Mesmo esquema do status-monitor: a cada push na main, copia o projeto para a VPS por SSH e sobe com docker compose.
+# O .env de produção vive só na VPS (~/solar/.env) e é preservado entre deploys.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-solar
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Puxando o código no GitHub
+        uses: actions/checkout@v4
+
+      - name: 2. Limpando arquivos antigos na VPS (preserva o .env)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            if [ ! -f ~/solar/.env ]; then
+              echo "ERRO: ~/solar/.env não existe na VPS. Crie-o a partir do .env.example antes do primeiro deploy."
+              exit 1
+            fi
+            mkdir -p ~/solar
+            # apaga tudo menos o .env (e a senha de apoio do Postgres, se existir)
+            find ~/solar -mindepth 1 -maxdepth 1 ! -name .env ! -name .solar_pg_pw -exec rm -rf {} +
+
+      - name: 3. Enviando os arquivos para a VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "."
+          target: "~/solar"
+
+      - name: 4. Construindo e ligando o Docker na VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/solar
+            docker compose up -d --build
+            docker image prune -f
+            docker compose ps
