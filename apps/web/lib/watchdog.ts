@@ -39,8 +39,10 @@ async function check() {
 
 async function send(accountId: number, login: string, text: string, recipients: { to: string; name: string; enabled: boolean }[]) {
   const evolution = evolutionFor(accountId, login);
-  const targets = recipients.filter((r) => r.enabled);
-  if (!evolution.configured || !targets.length) return console.log(`[whatsapp desativado]\n${text}`);
+  if (!evolution.configured) return console.log(`[whatsapp desativado]\n${text}`);
+  // sem destinatários, vai para o próprio número conectado
+  const { targets } = await evolution.resolveTargets(recipients);
+  if (!targets.length) return console.log(`[sem destinatário e WhatsApp desconectado]\n${text}`);
   for (const r of targets) {
     try {
       await evolution.sendText(r.to, text);

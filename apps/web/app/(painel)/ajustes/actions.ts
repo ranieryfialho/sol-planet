@@ -48,7 +48,7 @@ export async function sendTest(): Promise<{ ok: boolean; message: string }> {
   if (!evolution.configured) return { ok: false, message: "EVOLUTION_API_KEY não configurada." };
   if ((await evolution.state()).state !== "open") return { ok: false, message: "Conecte o WhatsApp antes de testar." };
   const { recipients } = await getSettings(getDb(), await currentAccountId());
-  const targets = recipients.filter((r) => r.enabled);
+  const { targets, self } = await evolution.resolveTargets(recipients);
   if (!targets.length) return { ok: false, message: "Nenhum destinatário ativo." };
   const errors: string[] = [];
   for (const r of targets) {
@@ -60,7 +60,7 @@ export async function sendTest(): Promise<{ ok: boolean; message: string }> {
   }
   return errors.length
     ? { ok: false, message: `Falhou para: ${errors.join(", ")}` }
-    : { ok: true, message: `Enviado para ${targets.length} destinatário(s).` };
+    : { ok: true, message: self ? "Enviado para o seu próprio número (nenhum destinatário cadastrado)." : `Enviado para ${targets.length} destinatário(s).` };
 }
 
 /** Cria a instância da conta se preciso e devolve o QR code para parear o número dela. */

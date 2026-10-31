@@ -6,6 +6,7 @@ import { Card, CardHeader, EmptyState, Icon, IconBadge, Pill, Value } from "@/co
 import { ecoImpact } from "@/lib/eco";
 import { brl, energy, fmtPower, n } from "@/lib/format";
 import {
+  getAccountKv,
   getAlerts,
   getAvg7,
   getCurrentPlant,
@@ -27,9 +28,23 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export default async function Home() {
   const plant = await getCurrentPlant();
   if (!plant) {
+    // o worker marca no kv quando a Solplanet devolveu zero usinas para esta conta
+    const noPlants = await getAccountKv<string>("no_plants");
     return (
       <Card className="mt-6">
-        <EmptyState icon="solar_power" title="Nenhuma usina ainda" text="O worker ainda não fez a primeira coleta. Confira o login da Solplanet e os logs do worker." />
+        {noPlants ? (
+          <EmptyState
+            icon="solar_power"
+            title="Esta conta Solplanet não tem usinas"
+            text="O login funcionou, mas a Solplanet não devolveu nenhuma usina para este e-mail. Confira no app da Solplanet se a usina está nesta conta (ou se foi cadastrada com outro e-mail ou telefone) e, se foi compartilhada, se o convite foi aceito."
+          />
+        ) : (
+          <EmptyState
+            icon="hourglass_top"
+            title="Bem-vindo! Estamos buscando os seus dados"
+            text="Conectamos à sua conta Solplanet e estamos trazendo a sua usina e o histórico dela. Na primeira vez isso leva de 1 a 3 minutos. Pode deixar esta página aberta: ela atualiza sozinha e os números aparecem assim que ficarem prontos."
+          />
+        )}
       </Card>
     );
   }

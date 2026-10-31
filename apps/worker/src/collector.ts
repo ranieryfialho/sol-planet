@@ -98,7 +98,11 @@ export class Collector {
    * `claimed`: usinas já coletadas neste ciclo por outra conta. Uma usina dividida por duas contas é coletada
    * uma vez só (senão as leituras duplicariam); a conta só passa a enxergá-la.
    */
+  /** false até a primeira coleta: o worker coleta contas novas na hora, sem esperar o ciclo de 2 min */
+  ticked = false;
+
   async tick(claimed: Set<number> = new Set()) {
+    this.ticked = true;
     this.settings = await getSettings(this.db, this.accountId);
     let list: PlantSummary[];
     try {
@@ -118,6 +122,14 @@ export class Collector {
     }
 
     this.plantIds = list.map((p) => p.stationid);
+    // a tela diferencia "worker ainda não coletou" de "esta conta Solplanet não tem usinas"
+    const emptyKey = `no_plants:${this.accountId}`;
+    if (!list.length) {
+      console.warn(`[${this.creds.account}] a conta entrou, mas a Solplanet não devolveu nenhuma usina`);
+      await this.db.insert(kv).values({ key: emptyKey, value: new Date().toISOString() }).onConflictDoUpdate({ target: kv.key, set: { value: new Date().toISOString(), updatedAt: new Date() } });
+    } else if ((await getKv(this.db, emptyKey)) !== undefined) {
+      await this.db.delete(kv).where(eq(kv.key, emptyKey));
+    }
     for (const p of list) {
       // a usina precisa existir antes da vinculação (chave estrangeira)
       if (!claimed.has(p.stationid)) {

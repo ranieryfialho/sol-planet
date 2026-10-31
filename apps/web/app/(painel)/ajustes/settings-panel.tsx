@@ -206,6 +206,11 @@ export function SettingsPanel({ initial, whatsapp, lastReportAt, account }: { in
           <span className="text-xs font-bold uppercase tracking-wider text-ink-2">Destinatários cadastrados</span>
           <span className="text-xs font-semibold text-mint-dark">{enabled} ativo(s)</span>
         </div>
+        {connected && enabled === 0 && (
+          <p className="mb-3 rounded-2xl bg-sky-soft px-4 py-3 text-[13px] text-ink-2">
+            Sem destinatários, os avisos chegam no seu próprio número{wa.number ? ` (+${wa.number})` : ""}. Adicione um grupo ou contato para enviar a outros.
+          </p>
+        )}
         <div className="space-y-3">
           {s.recipients.map((r) => {
             const group = r.to.includes("@g.us");

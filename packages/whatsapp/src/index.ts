@@ -41,6 +41,16 @@ export interface WaContact {
   name: string;
 }
 
+export interface SendTarget {
+  to: string;
+  name: string;
+  enabled: boolean;
+}
+
+// número pareado por instância, em memória (evita uma consulta de estado a cada mensagem)
+const ownNumbers = new Map<string, { at: number; number: string }>();
+const OWN_NUMBER_TTL_MS = 10 * 60_000;
+
 export class Evolution {
   constructor(readonly cfg: EvolutionConfig = evolutionFromEnv()) {}
 
@@ -123,8 +133,30 @@ export class Evolution {
     return [...byNumber.values()].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   }
 
+  /** Número pareado nesta instância (com cache); undefined se o WhatsApp não está conectado. */
+  async ownNumber(): Promise<string | undefined> {
+    const hit = ownNumbers.get(this.cfg.instance);
+    if (hit && Date.now() - hit.at < OWN_NUMBER_TTL_MS) return hit.number;
+    const { state, number } = await this.state();
+    if (state !== "open" || !number) return undefined;
+    ownNumbers.set(this.cfg.instance, { at: Date.now(), number });
+    return number;
+  }
+
+  /**
+   * Para quem enviar: os destinatários ativos. Sem nenhum cadastrado, o próprio número conectado
+   * (quem parear o WhatsApp e não escolher ninguém recebe os avisos no próprio celular).
+   */
+  async resolveTargets(recipients: SendTarget[]): Promise<{ targets: SendTarget[]; self: boolean }> {
+    const active = recipients.filter((r) => r.enabled);
+    if (active.length) return { targets: active, self: false };
+    const me = await this.ownNumber();
+    return me ? { targets: [{ to: me, name: "Você", enabled: true }], self: true } : { targets: [], self: false };
+  }
+
   /** Desconecta o número (a instância continua; dá para parear de novo). */
   logout() {
+    ownNumbers.delete(this.cfg.instance);
     return this.call(`/instance/logout/${this.cfg.instance}`, { method: "DELETE" });
   }
 }

@@ -104,11 +104,34 @@ async function cycle() {
   }
 }
 
+/** Conta recém-cadastrada (login no dashboard) é coletada em até ~15 s, em vez de esperar o próximo ciclo. */
+async function pickupNewAccounts() {
+  if (running) return;
+  running = true;
+  try {
+    await syncCollectors();
+    const claimed = new Set<number>();
+    for (const c of collectors.values()) {
+      if (c.ticked) continue;
+      try {
+        await c.tick(claimed);
+      } catch (e) {
+        console.error(`primeira coleta da conta ${c.accountId} falhou:`, e);
+      }
+    }
+  } catch (e) {
+    console.error("verificação de contas novas falhou:", e);
+  } finally {
+    running = false;
+  }
+}
+
 await pruneReadings().catch((e) => console.error("retenção falhou:", e));
 setInterval(() => pruneReadings().catch((e) => console.error("retenção falhou:", e)), 24 * 3600_000);
 
 console.log(`worker iniciado: coleta a cada ${config.pollMinutes} min (${config.timezone})`);
 await cycle();
 setInterval(cycle, config.pollMinutes * 60_000);
+setInterval(pickupNewAccounts, 15_000);
 
 for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => process.exit(0));

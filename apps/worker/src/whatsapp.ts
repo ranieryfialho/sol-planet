@@ -15,15 +15,19 @@ const DEDUPE_MS = 10 * 60_000;
  * o envio fica registrado por (destinatário, usina, tipo) e repetições em até 10 min são descartadas.
  */
 export async function notifyAlert(db: Db, who: Who, settings: Settings, plantId: number, kind: string, text: string) {
+  const active = settings.recipients.filter((x) => x.enabled);
+  // sem destinatários, vai para o próprio número conectado (a duplicata entre contas não existe: o número é de cada conta)
+  if (!active.length) return send(who, text, []);
   const fresh: Recipient[] = [];
-  for (const r of settings.recipients.filter((x) => x.enabled)) {
+  for (const r of active) {
     const key = `sent|${r.to}|${plantId}|${kind}`;
     const last = await getKv<number>(db, key);
     if (last && Date.now() - last < DEDUPE_MS) continue;
     await db.insert(kv).values({ key, value: Date.now() }).onConflictDoUpdate({ target: kv.key, set: { value: Date.now(), updatedAt: new Date() } });
     fresh.push(r);
   }
-  await send(who, text, fresh);
+  // todos já receberam há pouco: não cai no número próprio
+  if (fresh.length) await send(who, text, fresh);
 }
 
 /** Envia texto para os destinatários ativos da conta, pelo WhatsApp dela. Sem Evolution configurada, só loga. */
@@ -33,9 +37,13 @@ export async function notify(who: Who, text: string, settings: Settings) {
 
 async function send(who: Who, text: string, recipients: Recipient[]) {
   const evolution = evolutionFor(who.id, who.login);
-  const targets = recipients.filter((r) => r.enabled);
-  if (!evolution.configured || !targets.length) {
+  if (!evolution.configured) {
     console.log(`[whatsapp desativado]\n${text}`);
+    return;
+  }
+  const { targets } = await evolution.resolveTargets(recipients);
+  if (!targets.length) {
+    console.log(`[sem destinatário e WhatsApp desconectado]\n${text}`);
     return;
   }
   for (const r of targets) {
