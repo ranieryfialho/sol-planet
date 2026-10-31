@@ -1,0 +1,11 @@
+**/node_modules
+**/.next
+.venv
+.env
+*.xapk
+state.json
+**/__pycache__
+docs
+design
+*.pdf
+.git

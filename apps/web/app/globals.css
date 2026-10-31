@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* Tokens do design "Lumina Solar Clean Energy" (design/stitch_solar_monitoring_app_ui/lumina_solar_clean_energy/DESIGN.md) */
+@theme {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #111827;
+  --color-ink-2: #4b5563;
+  --color-ink-3: #9ca3af;
+  --color-line: #e2e8f0;
+
+  --color-mint: #1db98a;
+  --color-mint-dark: #006c4e;
+  --color-mint-deep: #00513a;
+  --color-mint-soft: #e8f8f3;
+  --color-mint-fixed: #72fac7;
+
+  --color-sun: #f28c28;
+  --color-sun-dark: #914d00;
+  --color-sun-soft: #fff1e3;
+
+  --color-sky: #2563eb;
+  --color-sky-soft: #e0ecff;
+
+  --color-danger: #ef4444;
+  --color-danger-soft: #fef2f2;
+
+  --color-surface: #ffffff;
+  --color-surface-low: #f1f3ff;
+  --color-surface-mid: #e9edff;
+  --color-surface-high: #e1e8fd;
+  --color-pill: #f1f5f9;
+
+  --radius-card: 1.5rem;
+
+  --shadow-card: 0 10px 30px -5px rgba(27, 49, 77, 0.06), 0 4px 10px -2px rgba(27, 49, 77, 0.03);
+  --shadow-pill-mint: 0 4px 14px rgba(29, 185, 138, 0.25);
+  --shadow-pill: 0 4px 12px rgba(17, 24, 39, 0.06);
+  --shadow-sheet: 0 20px 40px -10px rgba(15, 23, 42, 0.12);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  min-height: 100dvh;
+  background: linear-gradient(180deg, #dcebfa 0%, #f3f5f7 420px, #f3f5f7 100%);
+  background-attachment: fixed;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  user-select: none;
+}
+.icon-fill {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+/* esconde scrollbar horizontal de chips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

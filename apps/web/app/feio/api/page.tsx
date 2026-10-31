@@ -1,0 +1,76 @@
+export const metadata = { title: "API · feio" };
+
+type Rota = { m: "GET" | "POST"; path: string; params: string; uso: string; quem: string };
+
+const SOLPLANET: Rota[] = [
+  { m: "POST", path: "/aienergy/user/login", params: "account, password, isDemo=0", uso: "login; devolve token e userId (headers das demais chamadas)", quem: "worker + login do dashboard" },
+  { m: "GET", path: "/aienergy/plant/plantlist/v4", params: "type, sortby, sort, own, page, size, ...", uso: "lista de usinas: status, potência, etoday, etotal", quem: "worker (todo ciclo)" },
+  { m: "GET", path: "/aienergy/plant/detail/international/v4", params: "id", uso: "detalhe da usina: coordenadas, CO2, startdt, meterFlag", quem: "worker (todo ciclo)" },
+  { m: "GET", path: "/aienergy/plant/detail/flow/v2", params: "id", uso: "fluxo de energia: pv, load, grid, battery, soc", quem: "worker (todo ciclo)" },
+  { m: "GET", path: "/aienergy/equip/list/inverter/v3", params: "id", uso: "inversores da usina (pmuList[].invlist[])", quem: "worker (todo ciclo)" },
+  { m: "GET", path: "/aienergy/plant/storage/detail/v5", params: "id, isno", uso: "parâmetros em tempo real: strings PV e saída AC (v, i, p)", quem: "worker (todo ciclo)" },
+  { m: "GET", path: "/aienergy/chart/inverter/production/international/v4/{daily|week|month|year|total}", params: "id, isno, date (epoch ms)", uso: "histórico oficial: curva de 10 min, kWh por dia/mês/ano", quem: "worker (sincroniza histórico)" },
+  { m: "GET", path: "/aienergy/plant/user/errlistByIsno", params: "isno, page, size", uso: "códigos de erro dos inversores", quem: "worker (se alerta de erros ligado)" },
+  { m: "GET", path: "/aienergy/chart/hyperbola/v2", params: "id, isno, date (yyyy-MM-dd)", uso: "curva do dia de um inversor", quem: "não usada (CLI/cliente)" },
+  { m: "GET", path: "/aienergy/equip/invdetail/v2", params: "id, isno", uso: "detalhe do inversor", quem: "não usada (CLI/cliente)" },
+  { m: "GET", path: "/aienergy/equip/list/v6/allData", params: "id", uso: "todos os dispositivos da usina", quem: "não usada (CLI dump-all)" },
+  { m: "GET", path: "/aienergy/plant/dashboard/international", params: "-", uso: "resumo geral da conta", quem: "não usada (CLI dump-all)" },
+];
+
+const EVOLUTION: Rota[] = [
+  { m: "POST", path: "/message/sendText/{instance}", params: "number, text", uso: "envia mensagem no WhatsApp", quem: "worker + botão Testar" },
+  { m: "GET", path: "/instance/connectionState/{instance}", params: "-", uso: "estado da conexão (open/close)", quem: "Ajustes" },
+  { m: "GET", path: "/instance/fetchInstances?instanceName=", params: "instanceName", uso: "número conectado (ownerJid)", quem: "Ajustes" },
+  { m: "POST", path: "/instance/create", params: "instanceName, qrcode, integration", uso: "cria a instância do WhatsApp", quem: "Ajustes → Conectar" },
+  { m: "GET", path: "/instance/connect/{instance}", params: "-", uso: "QR code (base64) para parear", quem: "Ajustes → Conectar" },
+  { m: "GET", path: "/group/fetchAllGroups/{instance}?getParticipants=false", params: "getParticipants", uso: "lista de grupos", quem: "Ajustes (admin)" },
+];
+
+const WEB = [
+  ["/", "Início"],
+  ["/historico?periodo=dia|mes|ano|total&ref=", "Histórico"],
+  ["/alertas?f=todos|erros|offline|resolvidos", "Alertas"],
+  ["/inversor?sn=", "Inversor"],
+  ["/ajustes", "Ajustes (server actions: updateSettings, sendTest, connectWhatsApp, whatsappState, listGroups)"],
+  ["/login", "Login (server action: login / logout)"],
+  ["/feio", "versão feia dos dados"],
+  ["/feio/api", "esta página"],
+];
+
+function Tabela({ titulo, host, rotas }: { titulo: string; host: string; rotas: Rota[] }) {
+  return (
+    <>
+      <h2>== {titulo} ==</h2>
+      <p>{host}</p>
+      <pre>
+        {rotas.map((r) => `${r.m.padEnd(5)} ${r.path}\n      params: ${r.params}\n      ${r.uso}\n      usado por: ${r.quem}\n`).join("\n")}
+      </pre>
+    </>
+  );
+}
+
+export default function FeioApi() {
+  return (
+    <main style={{ background: "#000", color: "#0f0", fontFamily: "monospace", fontSize: 14, padding: 16, minHeight: "100vh" }}>
+      <h1>SOL-PLANET: rotas de API (versao feia)</h1>
+      <p>
+        <a href="/feio" style={{ color: "#0f0" }}>[voltar para /feio]</a>
+      </p>
+      <Tabela
+        titulo="SOLPLANET (API do app, engenharia reversa do APK)"
+        host="https://aienergy-internation.aisweicloud.com (Brasil) | headers: token, userid, x-ca-* (assinatura Alibaba)"
+        rotas={SOLPLANET}
+      />
+      <Tabela titulo="EVOLUTION (WhatsApp)" host="EVOLUTION_URL (header apikey)" rotas={EVOLUTION} />
+      <h2>== DASHBOARD (rotas deste app; nao ha /api, tudo e pagina + server action) ==</h2>
+      <pre>{WEB.map(([p, d]) => `${p.padEnd(44)} ${d}`).join("\n")}</pre>
+      <h2>== NOTAS ==</h2>
+      <pre>
+        {`- A API oficial para integradores (PDF em docs/) e outra: eu-api-genergal.aisweicloud.com
+  com /planlist, /getPlantOverview, /getInverterData etc. Nao e usada aqui.
+- O app Solplanet tambem tem comandos de controle remoto (/aienergy/equip/remote/*).
+  Ficaram de fora de proposito: o projeto so le dados.`}
+      </pre>
+    </main>
+  );
+}

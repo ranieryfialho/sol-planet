@@ -1,0 +1,17 @@
+{
+  "name": "sol-planet",
+  "private": true,
+  "packageManager": "pnpm@10.28.1",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @sol/web --filter @sol/worker dev",
+    "dev:web": "pnpm --filter @sol/web dev",
+    "dev:worker": "pnpm --filter @sol/worker dev",
+    "db:generate": "pnpm --filter @sol/db generate",
+    "test": "pnpm --filter @sol/worker exec tsx --test ../../tests/*.test.ts",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}

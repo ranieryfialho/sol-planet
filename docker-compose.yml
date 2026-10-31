@@ -1,0 +1,57 @@
+# Usa o Postgres que já roda na VPS (rede externa PG_NETWORK) e a Evolution API que já existe lá:
+# aponte EVOLUTION_URL e EVOLUTION_API_KEY no .env (cada conta cria a própria instância `solar-<login>-<id>`).
+# Crie antes o banco `solar`. O serviço `evolution` abaixo só sobe com `--profile evolution`
+# (para quem não tem uma Evolution; precisa também do banco `evolution`).
+services:
+  web:
+    build: { context: ., target: web }
+    container_name: solar-web
+    restart: unless-stopped
+    # login do dashboard = conta Solplanet de cada usuário (cadastrada no 1º login)
+    env_file: .env
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-3000}:3000"
+    networks: [default, pg]
+
+  worker:
+    build: { context: ., target: worker }
+    container_name: solar-worker
+    restart: unless-stopped
+    env_file: .env
+    networks: [default, pg]
+
+  evolution:
+    profiles: ["evolution"]
+    image: evoapicloud/evolution-api:v2.3.7
+    restart: unless-stopped
+    environment:
+      SERVER_URL: http://localhost:8080
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: ${EVOLUTION_DATABASE_URL}
+      DATABASE_CONNECTION_CLIENT_NAME: solar
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      # só contatos: o dashboard lista a agenda para escolher destinatários; mensagens e chats não são guardados
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "false"
+      DATABASE_SAVE_MESSAGE_UPDATE: "false"
+      DATABASE_SAVE_DATA_CONTACTS: "true"
+      DATABASE_SAVE_DATA_CHATS: "false"
+      CACHE_REDIS_ENABLED: "false"
+      CACHE_LOCAL_ENABLED: "true"
+      DEL_INSTANCE: "false"
+      LOG_LEVEL: ERROR,WARN
+    volumes:
+      - evolution_instances:/evolution/instances
+    # só localhost: o pareamento (QR code) é feito pela tela Ajustes do dashboard
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks: [default, pg]
+
+volumes:
+  evolution_instances:
+
+networks:
+  pg:
+    external: true
+    name: ${PG_NETWORK}

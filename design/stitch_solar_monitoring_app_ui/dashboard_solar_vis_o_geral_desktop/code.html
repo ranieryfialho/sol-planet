@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-surface-variant":"#3c4a43","secondary-fixed-dim":"#ffb77d","error-container":"#ffdad6","surface-container-lowest":"#ffffff","primary":"#006c4e","primary-fixed":"#72fac7","surface-container-low":"#f1f3ff","on-tertiary-container":"#00328c","surface-container-highest":"#dce2f7","secondary":"#914d00","on-tertiary-fixed-variant":"#003ea8","inverse-on-surface":"#edf0ff","outline":"#6c7a72","on-primary-fixed-variant":"#00513a","on-primary-fixed":"#002115","background":"#f9f9ff","secondary-container":"#fc9430","outline-variant":"#bbcac1","secondary-fixed":"#ffdcc3","primary-container":"#1db98a","on-tertiary":"#ffffff","tertiary":"#0053db","surface-bright":"#f9f9ff","surface-tint":"#006c4e","on-secondary":"#ffffff","on-primary":"#ffffff","surface-variant":"#dce2f7","on-surface":"#141b2b","inverse-primary":"#52ddac","tertiary-container":"#80a0ff","surface":"#f9f9ff","on-error":"#ffffff","on-error-container":"#93000a","primary-fixed-dim":"#52ddac","inverse-surface":"#293040","on-secondary-fixed":"#2f1500","tertiary-fixed-dim":"#b4c5ff","on-tertiary-fixed":"#00174b","tertiary-fixed":"#dbe1ff","on-background":"#141b2b","error":"#ba1a1a","on-primary-container":"#00432f","on-secondary-fixed-variant":"#6e3900","on-secondary-container":"#663500","surface-container-high":"#e1e8fd","surface-dim":"#d3daef","surface-container":"#e9edff"},"borderRadius":{"DEFAULT":"1rem","lg":"2rem","xl":"3rem","full":"9999px"},"spacing":{"margin":"1rem","margin-desktop":"3rem","space-xl":"2rem","space-md":"1rem","space-lg":"1.5rem","gutter-desktop":"1.5rem","gutter":"1rem","space-sm":"0.5rem","space-xs":"0.25rem"},"fontFamily":{"headline-md":["Plus Jakarta Sans"],"body-sm":["Plus Jakarta Sans"],"label-badge":["Plus Jakarta Sans"],"label-unit":["Plus Jakarta Sans"],"display-hero":["Plus Jakarta Sans"],"display-hero-mobile":["Plus Jakarta Sans"],"title-telemetry":["Plus Jakarta Sans"],"caption":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"headline-sm":["Plus Jakarta Sans"]},"fontSize":{"headline-md":["22px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"label-badge":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"700"}],"label-unit":["12px",{"lineHeight":"14px","letterSpacing":"0.01em","fontWeight":"600"}],"display-hero":["44px",{"lineHeight":"52px","letterSpacing":"-0.03em","fontWeight":"800"}],"display-hero-mobile":["32px",{"lineHeight":"38px","letterSpacing":"-0.02em","fontWeight":"800"}],"title-telemetry":["24px",{"lineHeight":"28px","letterSpacing":"-0.02em","fontWeight":"700"}],"caption":["11px",{"lineHeight":"14px","fontWeight":"500"}],"body-lg":["16px",{"lineHeight":"24px","fontWeight":"500"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-sm":["18px",{"lineHeight":"24px","fontWeight":"600"}]}}}}</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container-lowest z-50 flex flex-col justify-between p-space-lg shadow-[0_10px_30px_-5px_rgba(27,49,77,0.06)]"><div class="flex flex-col gap-space-xl"><div class="flex items-center gap-space-sm px-space-xs"><div class="w-10 h-10 rounded-DEFAULT bg-primary-container flex items-center justify-center text-on-primary shadow-[0_4px_14px_rgba(29,185,138,0.25)]"><span class="material-symbols-outlined text-[24px]">solar_power</span></div><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface leading-none tracking-tight">Solar</span><span class="font-caption text-caption text-on-surface-variant">Monitoramento</span></div></div><nav class="flex flex-col gap-space-xs" data-active-classes="bg-primary-container text-on-primary font-headline-sm shadow-[0_4px_14px_rgba(29,185,138,0.25)]"><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="inicio" href="#"><span class="material-symbols-outlined text-[20px]">home</span><span class="font-body-md text-body-md">Início</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="historico" href="#"><span class="material-symbols-outlined text-[20px]">calendar_today</span><span class="font-body-md text-body-md">Histórico</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="alertas" href="#"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="font-body-md text-body-md">Alertas</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="inversor" href="#"><span class="material-symbols-outlined text-[20px]">bolt</span><span class="font-body-md text-body-md">Inversor</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="ajustes" href="#"><span class="material-symbols-outlined text-[20px]">tune</span><span class="font-body-md text-body-md">Ajustes</span></a></nav></div><div class="flex flex-col gap-space-md pt-space-md"><div class="bg-surface-container-low rounded-DEFAULT p-space-sm flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="w-2.5 h-2.5 rounded-full bg-primary-container animate-pulse"></span><span class="font-caption text-caption text-on-surface font-bold">Inversor Operacional</span></div><span class="font-caption text-caption text-primary font-bold">100%</span></div><div class="flex items-center gap-space-sm px-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col overflow-hidden"><span class="font-body-sm text-body-sm text-on-surface font-semibold truncate">Família Silveira</span><span class="font-caption text-caption text-on-surface-variant truncate">Plano Residencial Premium</span></div></div></div></aside><div class="pl-64 min-h-screen bg-gradient-to-b from-[#DCEBFA] to-background"><header class="fixed top-0 left-64 right-0 h-20 z-40 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full h-full px-space-lg flex items-center justify-between"><div class="flex items-center gap-space-md"><button class="flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-surface-container hover:bg-surface-container-high transition-colors" type="button"><span class="material-symbols-outlined text-primary text-[20px]">home_pin</span><span class="font-headline-sm text-headline-sm text-on-surface">Minha Casa</span><span class="material-symbols-outlined text-on-surface-variant text-[18px]">arrow_drop_down</span></button><div class="flex items-center gap-space-xs"><div class="inline-flex items-center px-space-sm py-0.5 rounded-full bg-primary-container text-on-primary font-label-badge text-label-badge shadow-[0_4px_14px_rgba(29,185,138,0.25)]"><span class="material-symbols-outlined text-[14px] mr-1">power</span>Conectado à Rede</div><div class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-surface-container-lowest text-on-surface font-label-badge text-label-badge shadow-[0_4px_12px_rgba(17,24,39,0.06)]"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-container opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-primary-container"></span></span>Ao Vivo</div></div></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-surface-container-lowest shadow-[0_4px_12px_rgba(17,24,39,0.04)]"><span class="material-symbols-outlined text-secondary-container text-[20px]">wb_sunny</span><span class="font-headline-sm text-headline-sm text-on-surface">29°C</span><span class="font-caption text-caption text-on-surface-variant">Campinas, SP</span></div><div class="flex items-center gap-space-xs"><button aria-label="Notificações" class="w-10 h-10 rounded-full bg-surface-container-lowest flex items-center justify-center text-on-surface-variant hover:text-on-surface shadow-[0_4px_12px_rgba(17,24,39,0.04)] transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications_none</span></button><button aria-label="Ajuda" class="w-10 h-10 rounded-full bg-surface-container-lowest flex items-center justify-center text-on-surface-variant hover:text-on-surface shadow-[0_4px_12px_rgba(17,24,39,0.04)] transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">help_outline</span></button></div></div></div></header><main class="relative pt-20 w-full px-space-lg pb-space-xl"><div class="flex flex-col w-full">
+<div class="flex flex-col gap-space-lg w-full max-w-[1400px] mx-auto">
+<!-- Secondary Context Bar / Telemetry KPI Header -->
+<div class="flex flex-wrap items-center justify-between gap-space-md bg-surface-container-lowest/90 backdrop-blur-md px-space-lg py-space-md rounded-DEFAULT shadow-[0_10px_30px_-5px_rgba(27,49,77,0.05)]">
+<div class="flex flex-wrap items-center gap-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">Visão Geral de Geração</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+<span class="font-caption text-caption text-on-surface-variant uppercase tracking-wider">Unidade Solar GD-01</span>
+</div>
+<div class="hidden md:flex items-center gap-2 px-space-sm py-1 rounded-full bg-surface-container text-on-surface-variant font-label-badge text-label-badge">
+<span class="material-symbols-outlined text-[16px] text-primary">solar_power</span>
+          Inversor Deye 5kW Híbrido
+        </div>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-space-xs px-space-md py-1 rounded-full bg-surface-container-low text-primary font-label-badge text-label-badge">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+<span>Eficiência do Sistema: <strong class="font-headline-sm text-[13px] ml-0.5">98.4%</strong></span>
+</div>
+<div class="flex items-center gap-1.5 px-space-sm py-1 rounded-full bg-surface-container font-caption text-caption text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-secondary-container">thermostat</span>
+<span>Painel: 42°C</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button aria-label="Atualizar telemetria" class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface transition-transform active:rotate-180" id="refreshBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Main Two-Column Layout -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+<!-- Left Two-Thirds: Interactive Digital Twin & Energy Topology -->
+<div class="xl:col-span-8 flex flex-col gap-space-lg">
+<div class="relative bg-surface-container-lowest rounded-lg p-space-lg md:p-space-xl shadow-[0_10px_30px_-5px_rgba(27,49,77,0.06),0_4px_10px_-2px_rgba(27,49,77,0.03)] overflow-hidden">
+<!-- Card Header Overlay -->
+<div class="flex items-center justify-between z-20 relative mb-4">
+<div class="flex items-center gap-space-sm">
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Fluxo de Energia em Tempo Real</h2>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface font-caption text-caption">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+                Sincronizado
+              </span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-caption text-caption text-on-surface-variant hidden sm:inline">Última leitura: 14:32:05</span>
+<div class="p-1 rounded-full bg-surface-container-low text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">electric_meter</span>
+</div>
+</div>
+</div>
+<!-- Digital Twin Stage & Flow Canvas -->
+<div class="relative w-full h-[460px] md:h-[500px] flex items-center justify-center rounded-DEFAULT bg-gradient-to-b from-surface-container-low/60 to-surface-container-lowest overflow-hidden">
+<!-- Subtle Radial Ambience Behind House -->
+<div class="absolute w-96 h-96 rounded-full bg-primary-container/10 filter blur-3xl pointer-events-none top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+<!-- Background Topology Grid Texture -->
+<svg class="absolute inset-0 w-full h-full opacity-35 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<pattern height="40" id="iso-grid" patternunits="userSpaceOnUse" width="40">
+<path d="M 40 0 L 0 20 L 40 40 Z" fill="none" stroke="#bbcac1" stroke-dasharray="2 4" stroke-width="0.5"></path>
+</pattern>
+</defs>
+<rect fill="url(#iso-grid)" height="100%" width="100%"></rect>
+</svg>
+<!-- Dynamic Flow Path Lines SVG (Animated Particles) -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none z-10" preserveaspectratio="xMidYMid meet" viewbox="0 0 800 500">
+<defs>
+<lineargradient id="solarFlow" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#1DB98A" stop-opacity="0.8"></stop>
+<stop offset="100%" stop-color="#72fac7" stop-opacity="0.2"></stop>
+</lineargradient>
+<lineargradient id="gridFeed" x1="0%" x2="100%" y1="100%" y2="0%">
+<stop offset="0%" stop-color="#1DB98A" stop-opacity="0.9"></stop>
+<stop offset="100%" stop-color="#0053db" stop-opacity="0.3"></stop>
+</lineargradient>
+<lineargradient id="homeDraw" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#fc9430" stop-opacity="0.8"></stop>
+<stop offset="100%" stop-color="#fc9430" stop-opacity="0.1"></stop>
+</lineargradient>
+</defs>
+<!-- Connection: Solar Array to Inverter -->
+<path class="animate-[dash_20s_linear_infinite]" d="M 280 130 L 375 220" fill="none" stroke="#1DB98A" stroke-dasharray="6 4" stroke-width="2.5"></path>
+<!-- Connection: Inverter to Residential Bus (House consumption) -->
+<path d="M 375 240 L 260 365" fill="none" stroke="#CBD5E1" stroke-linecap="round" stroke-width="2"></path>
+<!-- Connection: Inverter to Battery -->
+<path d="M 435 245 L 530 225" fill="none" stroke="#1DB98A" stroke-dasharray="5 3" stroke-width="2.5"></path>
+<!-- Connection: Inverter to Grid Export -->
+<path d="M 430 260 L 590 360" fill="none" stroke="#1DB98A" stroke-dasharray="8 4" stroke-width="3"></path>
+<!-- Micro Pulsing Nodes -->
+<circle class="animate-ping" cx="375" cy="230" fill="#1DB98A" opacity="0.6" r="5"></circle>
+<circle cx="375" cy="230" fill="#006c4e" r="3"></circle>
+<circle cx="590" cy="360" fill="#1DB98A" r="4"></circle>
+<circle cx="260" cy="365" fill="#fc9430" r="4"></circle>
+</svg>
+<!-- Architectural Model Placeholder (Hero Visualization) -->
+<div class="relative z-0 w-[540px] max-w-full flex items-center justify-center transform transition-transform duration-500 hover:scale-[1.02]">
+<img class="w-full h-auto object-contain drop-shadow-[0_20px_25px_rgba(27,49,77,0.12)] rounded-DEFAULT" data-alt="Photorealistic architectural 3D render of a modern minimalist eco-friendly home with dark photovoltaic solar panels neatly mounted on the gabled roof, illuminated by bright natural daylight under a clear sky. A compact white smart wall inverter with subtle glowing mint LED indicators is visible beside an energy storage battery unit in a clean carport." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbF5JnWI-nML32aA9VbhYKYgjJVAS-vm5THZZek-v6_VvRsFjW3fEHT2Op_ezEoZZBb7kSg14stzfORb40PKxdQ7ZuOOudov5A8pdFpxmctwhSTPXfAJYVCN7H3CZjP_IsQRSlWMKFMCmWJgvIXrPbx2PGgcd4FaCpDluYIUedcWFUTTKzPPaDdchTq2kDdjWf3KFH7C2IjbUWGgXskzVib8oVRQSMOVdgLwZlMA"/>
+</div>
+<!-- FLOATING TELEMETRY LABELS (Absolute Positioned over Architecture) -->
+<!-- Metric 1: Solar Generation (Top-Left) -->
+<div class="absolute top-6 left-6 md:top-10 md:left-12 z-20 bg-surface-container-lowest/95 backdrop-blur-md p-space-sm md:p-space-md rounded-DEFAULT shadow-[0_10px_30px_-5px_rgba(27,49,77,0.08)] flex flex-col min-w-[140px] transform hover:-translate-y-1 transition-transform">
+<div class="flex items-center justify-between gap-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-primary-container">wb_sunny</span>
+                  Solar
+                </span>
+<span class="font-label-badge text-[10px] px-1.5 py-0.5 rounded-full bg-primary-container/20 text-primary font-bold">Pico</span>
+</div>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="font-display-hero text-headline-lg md:text-[34px] font-extrabold text-on-surface leading-none">4,2</span>
+<span class="font-headline-sm text-headline-sm text-on-surface-variant">kW</span>
+</div>
+<span class="font-caption text-caption text-primary flex items-center gap-0.5 mt-1 font-semibold">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +8% capacidade
+              </span>
+</div>
+<!-- Metric 2: Bateria & Inversor (Top-Right) -->
+<div class="absolute top-6 right-6 md:top-10 md:right-12 z-20 bg-surface-container-lowest/95 backdrop-blur-md p-space-sm md:p-space-md rounded-DEFAULT shadow-[0_10px_30px_-5px_rgba(27,49,77,0.08)] flex flex-col min-w-[150px] transform hover:-translate-y-1 transition-transform">
+<div class="flex items-center justify-between gap-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-primary">battery_charging_full</span>
+                  Bateria
+                </span>
+<span class="font-label-badge text-[11px] px-2 py-0.5 rounded-full bg-primary-container text-on-primary font-bold">92%</span>
+</div>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="font-display-hero text-headline-lg md:text-[34px] font-extrabold text-on-surface leading-none">1,6</span>
+<span class="font-headline-sm text-headline-sm text-on-surface-variant">kW</span>
+</div>
+<div class="flex items-center gap-1 mt-1 font-caption text-caption text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+<span>Inversor: 98% ef.</span>
+</div>
+</div>
+<!-- Metric 3: Consumo da Casa (Bottom-Left) -->
+<div class="absolute bottom-6 left-6 md:bottom-10 md:left-12 z-20 bg-surface-container-lowest/95 backdrop-blur-md p-space-sm md:p-space-md rounded-DEFAULT shadow-[0_10px_30px_-5px_rgba(27,49,77,0.08)] flex flex-col min-w-[140px] transform hover:-translate-y-1 transition-transform">
+<div class="flex items-center justify-between gap-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-secondary-container">home</span>
+                  Casa
+                </span>
+<span class="font-caption text-caption text-secondary font-bold">Consumo</span>
+</div>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="font-display-hero text-headline-lg md:text-[34px] font-extrabold text-on-surface leading-none">1,8</span>
+<span class="font-headline-sm text-headline-sm text-on-surface-variant">kW</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant mt-1">Cargas ativas: 12</span>
+</div>
+<!-- Metric 4: Injetando na Rede (Bottom-Right) -->
+<div class="absolute bottom-6 right-6 md:bottom-10 md:right-12 z-20 bg-surface-container-lowest/95 backdrop-blur-md p-space-sm md:p-space-md rounded-DEFAULT shadow-[0_10px_30px_-5px_rgba(27,49,77,0.08)] flex flex-col min-w-[160px] transform hover:-translate-y-1 transition-transform">
+<div class="flex items-center justify-between gap-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-tertiary">power</span>
+                  Rede Elétrica
+                </span>
+<span class="font-label-badge text-[10px] px-1.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-bold">Injetando</span>
+</div>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="font-display-hero text-headline-lg md:text-[34px] font-extrabold text-primary leading-none">2,4</span>
+<span class="font-headline-sm text-headline-sm text-on-surface-variant">kW ↑</span>
+</div>
+<span class="font-caption text-caption text-primary mt-1 font-semibold">Gerando créditos CPFL</span>
+</div>
+</div>
+<!-- Bottom Status Summary Banner -->
+<div class="mt-space-md p-space-md rounded-DEFAULT bg-surface-container-low flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center shadow-[0_4px_14px_rgba(29,185,138,0.25)]">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-[15px] text-on-surface">Geração superando o consumo em +133%</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Sua casa está 100% autossuficiente agora e exportando o excedente.</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-badge text-label-badge text-on-surface-variant">Tarifa Vigente: Bandeira Verde</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right One-Third: Key Telemetry Cards & Impact Gauges -->
+<div class="xl:col-span-4 flex flex-col gap-space-lg">
+<!-- Card 1: Geração Hoje com Mini Curva Solar -->
+<div class="bg-surface-container-lowest rounded-lg p-space-lg shadow-[0_10px_30px_-5px_rgba(27,49,77,0.06),0_4px_10px_-2px_rgba(27,49,77,0.03)] flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary-container/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">today</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Produção de Hoje</h3>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-badge text-label-badge">+12% vs média</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<div class="flex items-baseline gap-1.5">
+<span class="font-display-hero text-[40px] font-extrabold text-on-surface leading-none">21,8</span>
+<span class="font-headline-sm text-headline-sm text-on-surface-variant">kWh</span>
+</div>
+<div class="text-right">
+<span class="font-caption text-caption text-on-surface-variant">Meta Diária: 24,0 kWh</span>
+<div class="font-body-sm text-body-sm text-primary font-semibold">91% atingido</div>
+</div>
+</div>
+<!-- Daylight Solar Generation Curve (Inline SVG) -->
+<div class="relative w-full h-24 pt-2">
+<svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 300 80">
+<defs>
+<lineargradient id="daylightArea" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#1db98a" stop-opacity="0.35"></stop>
+<stop offset="100%" stop-color="#1db98a" stop-opacity="0.0"></stop>
+</lineargradient>
+</defs>
+<!-- Baseline Grid -->
+<line stroke="#e9edff" stroke-width="1" x1="0" x2="300" y1="75" y2="75"></line>
+<line stroke="#e9edff" stroke-dasharray="3 3" stroke-width="1" x1="0" x2="300" y1="40" y2="40"></line>
+<!-- Sun Trajectory fill & stroke -->
+<path d="M 0,75 C 60,74 90,60 120,25 C 150,-2 180,5 210,32 C 240,55 270,72 300,75 L 300,75 L 0,75 Z" fill="url(#daylightArea)"></path>
+<path d="M 0,75 C 60,74 90,60 120,25 C 150,-2 180,5 210,32 C 240,55 270,72 300,75" fill="none" stroke="#1db98a" stroke-linecap="round" stroke-width="2.5"></path>
+<!-- Real-time position marker (2:30pm) -->
+<circle cx="185" cy="18" fill="#1db98a" r="5" stroke="#ffffff" stroke-width="2"></circle>
+<circle class="animate-ping" cx="185" cy="18" fill="#1db98a" opacity="0.25" r="9"></circle>
+</svg>
+<div class="flex justify-between items-center text-[10px] text-on-surface-variant font-caption mt-1 px-1">
+<span>06:00</span>
+<span>12:00</span>
+<span>14:30 (Agora)</span>
+<span>18:30</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Acumulado Este Mês & Economia Financeira -->
+<div class="bg-surface-container-lowest rounded-lg p-space-lg shadow-[0_10px_30px_-5px_rgba(27,49,77,0.06),0_4px_10px_-2px_rgba(27,49,77,0.03)] flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed/40 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[18px]">calendar_month</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Este Mês (Outubro)</h3>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">chevron_right</span>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-1">
+<div class="flex flex-col bg-surface-container-low p-space-sm rounded-DEFAULT">
+<span class="font-caption text-caption text-on-surface-variant">Geração Total</span>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="font-headline-lg text-headline-lg font-bold text-on-surface">512</span>
+<span class="font-label-unit text-label-unit text-on-surface-variant">kWh</span>
+</div>
+<span class="font-caption text-[11px] text-primary font-semibold mt-1">↑ 9.4% vs mês ant.</span>
+</div>
+<div class="flex flex-col bg-surface-container-low p-space-sm rounded-DEFAULT">
+<span class="font-caption text-caption text-on-surface-variant">Economia Estimada</span>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="font-headline-lg text-headline-lg font-bold text-primary">R$ 342</span>
+<span class="font-label-unit text-label-unit text-on-surface-variant">,00</span>
+</div>
+<span class="font-caption text-[11px] text-on-surface-variant mt-1">Equiv. a tarifa cheia</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t-0 bg-surface-container-lowest">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Acumulado Histórico Total:</span>
+<span class="font-headline-sm text-[15px] font-bold text-on-surface">8,46 MWh</span>
+</div>
+</div>
+<!-- Card 3: Contribuição Ambiental e Social (Matching Mobile Inspo Pill Grid) -->
+<div class="bg-surface-container-lowest rounded-lg p-space-lg shadow-[0_10px_30px_-5px_rgba(27,49,77,0.06),0_4px_10px_-2px_rgba(27,49,77,0.03)] flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-[18px]">eco</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Impacto Positivo</h3>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">workspace_premium</span>
+</div>
+<div class="grid grid-cols-3 gap-2 text-center pt-2">
+<!-- Coal Saved -->
+<div class="flex flex-col items-center bg-surface-container-low/60 rounded-DEFAULT p-space-sm transition-all hover:bg-surface-container-high/60">
+<div class="w-12 h-12 rounded-full bg-slate-200/80 flex items-center justify-center text-on-surface-variant mb-2">
+<span class="material-symbols-outlined text-[24px]">air</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant leading-tight">Carvão evitado</span>
+<span class="font-headline-md text-headline-md text-on-surface mt-1 font-bold">3,6</span>
+<span class="font-caption text-[11px] text-on-surface-variant">toneladas</span>
+</div>
+<!-- CO2 Reduced -->
+<div class="flex flex-col items-center bg-surface-container-low/60 rounded-DEFAULT p-space-sm transition-all hover:bg-surface-container-high/60">
+<div class="w-12 h-12 rounded-full bg-sky-100 flex items-center justify-center text-tertiary mb-2">
+<span class="material-symbols-outlined text-[24px]">factory</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant leading-tight">CO₂ reduzido</span>
+<span class="font-headline-md text-headline-md text-on-surface mt-1 font-bold">7,2</span>
+<span class="font-caption text-[11px] text-on-surface-variant">toneladas</span>
+</div>
+<!-- Equivalent Trees -->
+<div class="flex flex-col items-center bg-surface-container-low/60 rounded-DEFAULT p-space-sm transition-all hover:bg-surface-container-high/60">
+<div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-primary mb-2">
+<span class="material-symbols-outlined text-[24px]">forest</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant leading-tight">Árvores equiv.</span>
+<span class="font-headline-md text-headline-md text-on-surface mt-1 font-bold">119</span>
+<span class="font-caption text-[11px] text-on-surface-variant">plantadas</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Full-Width Row: Detailed 30-Day Histogram & System Event Log -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-stretch">
+<!-- Analytics Card: Produção últimos 30 dias -->
+<div class="xl:col-span-8 bg-surface-container-lowest rounded-lg p-space-lg shadow-[0_10px_30px_-5px_rgba(27,49,77,0.06),0_4px_10px_-2px_rgba(27,49,77,0.03)] flex flex-col justify-between">
+<div>
+<div class="flex flex-wrap items-center justify-between gap-space-md mb-space-md">
+<div>
+<h3 class="font-headline-lg text-headline-sm text-on-surface">Histórico Diário — Últimos 30 Dias</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Distribuição de geração energética diária em kWh</p>
+</div>
+<div class="flex items-center gap-space-xs bg-surface-container p-1 rounded-full">
+<button class="px-space-md py-1 rounded-full bg-surface-container-lowest text-on-surface font-label-badge text-label-badge shadow-[0_2px_8px_rgba(0,0,0,0.04)]" type="button">Dia</button>
+<button class="px-space-md py-1 rounded-full text-on-surface-variant hover:text-on-surface font-label-badge text-label-badge" type="button">Semana</button>
+<button class="px-space-md py-1 rounded-full text-on-surface-variant hover:text-on-surface font-label-badge text-label-badge" type="button">Mês</button>
+</div>
+</div>
+<!-- Interactive Bar Histogram (30 Days) -->
+<div class="relative w-full h-56 pt-6 pb-2">
+<!-- Guideline Average -->
+<div class="absolute left-0 right-0 top-[40%] flex items-center pointer-events-none z-10">
+<div class="w-full border-b border-dashed border-outline-variant/60"></div>
+<span class="bg-surface-container-lowest px-2 text-[11px] font-caption text-on-surface-variant whitespace-nowrap font-medium">Média: 17,1 kWh</span>
+</div>
+<!-- CSS Bar Graph -->
+<div class="h-full flex items-end justify-between gap-1 md:gap-1.5 pt-4">
+<!-- Day 1-17 Bars -->
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[60%]" title="Dia 01: 15.2 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[72%]" title="Dia 02: 18.0 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[85%]" title="Dia 03: 21.3 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[40%]" title="Dia 04: 10.1 kWh (Chuva)"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[65%]" title="Dia 05: 16.3 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[90%]" title="Dia 06: 22.8 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[80%]" title="Dia 07: 20.0 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[75%]" title="Dia 08: 19.1 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[68%]" title="Dia 09: 17.0 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[82%]" title="Dia 10: 20.5 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[88%]" title="Dia 11: 22.1 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[55%]" title="Dia 12: 13.8 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[70%]" title="Dia 13: 17.5 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[84%]" title="Dia 14: 21.0 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[92%]" title="Dia 15: 23.2 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[64%]" title="Dia 16: 16.0 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[78%]" title="Dia 17: 19.5 kWh"></div>
+<!-- Highlighted Day 18 (Pico do Mês) -->
+<div class="relative flex-1 bg-primary-container rounded-t-sm h-[98%] shadow-[0_0_12px_rgba(29,185,138,0.4)] group cursor-pointer">
+<!-- Permanent/Hover Tooltip -->
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface px-2 py-1 rounded text-[11px] font-caption font-bold whitespace-nowrap shadow-lg z-20">
+                  18/10 · 24,6 kWh
+                </div>
+</div>
+<!-- Day 19-30 Bars -->
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[82%]" title="Dia 19: 20.6 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[76%]" title="Dia 20: 19.0 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[50%]" title="Dia 21: 12.5 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[85%]" title="Dia 22: 21.3 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[79%]" title="Dia 23: 19.8 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[91%]" title="Dia 24: 22.9 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[88%]" title="Dia 25: 22.0 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[72%]" title="Dia 26: 18.1 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[80%]" title="Dia 27: 20.0 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[84%]" title="Dia 28: 21.1 kWh"></div>
+<div class="flex-1 bg-primary-container/40 hover:bg-primary-container transition-colors rounded-t-sm h-[89%]" title="Dia 29: 22.4 kWh"></div>
+<div class="flex-1 bg-primary-container hover:bg-primary-container transition-colors rounded-t-sm h-[87%]" title="Dia 30 (Hoje): 21.8 kWh"></div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between text-caption text-on-surface-variant pt-2">
+<span>01 Out</span>
+<span>15 Out</span>
+<span class="font-bold text-primary">Hoje (30 Out)</span>
+</div>
+</div>
+<!-- Quick Feed: Diagnóstico e Últimos Alertas do Sistema -->
+<div class="xl:col-span-4 bg-surface-container-lowest rounded-lg p-space-lg shadow-[0_10px_30px_-5px_rgba(27,49,77,0.06),0_4px_10px_-2px_rgba(27,49,77,0.03)] flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Eventos &amp; Notificações</h3>
+<span class="text-caption text-primary font-bold cursor-pointer hover:underline">Ver todos (14)</span>
+</div>
+<div class="flex flex-col gap-space-sm">
+<!-- Event 1 (Normal / Today) -->
+<div class="p-space-sm rounded-DEFAULT bg-surface-container-low flex items-start justify-between gap-space-xs">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-emerald-100 text-primary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-[13px] text-on-surface">Tudo operando normalmente</span>
+<span class="font-caption text-caption text-on-surface-variant">Geração iniciada pontualmente às 06:14</span>
+<span class="font-caption text-[11px] text-on-surface-variant mt-1">Hoje · 12:00</span>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-surface-container text-primary text-[10px] font-bold">
+                ✓ WhatsApp
+              </span>
+</div>
+<!-- Event 2 (Alert Resolved / Yesterday) -->
+<div class="p-space-sm rounded-DEFAULT bg-surface-container-low flex items-start justify-between gap-space-xs">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-amber-100 text-secondary-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">wifi_off</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-[13px] text-on-surface">Inversor Offline por 14 min</span>
+<span class="font-caption text-caption text-on-surface-variant">Roteador Wi-Fi reiniciado. Dados restaurados sem perda.</span>
+<span class="font-caption text-[11px] text-on-surface-variant mt-1">Ontem · 16:42</span>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-surface-container text-primary text-[10px] font-bold">
+                ✓ Enviado
+              </span>
+</div>
+<!-- Event 3 (Informative / 3 days ago) -->
+<div class="p-space-sm rounded-DEFAULT bg-surface-container-low flex items-start justify-between gap-space-xs">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-sky-100 text-tertiary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">electric_meter</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-[13px] text-on-surface">Fechamento do Ciclo de Fatura</span>
+<span class="font-caption text-caption text-on-surface-variant">Crédito gerado de 312 kWh computado na concessionária.</span>
+<span class="font-caption text-[11px] text-on-surface-variant mt-1">27 Out · 09:15</span>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-[10px] font-bold">
+                Email
+              </span>
+</div>
+</div>
+</div>
+<div class="pt-space-md">
+<button class="w-full py-2.5 px-space-md rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-badge text-label-badge flex items-center justify-center gap-2 transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">support_agent</span>
+<span>Solicitar Suporte Técnico Especializado</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Simple micro-interaction for the refresh telemetry trigger
+  document.getElementById('refreshBtn')?.addEventListener('click', function() {
+    this.classList.add('rotate-180');
+    setTimeout(() => {
+      this.classList.remove('rotate-180');
+    }, 600);
+  });
+</script></main></div></body></html>
