@@ -25,7 +25,9 @@ export const dynamic = "force-dynamic";
 const monthName = () => new Date().toLocaleDateString("pt-BR", { month: "long", timeZone: TZ });
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  // ?simular=1 mostra a cena de dia, gerando (para ver a animação a qualquer hora)
+  const preview = (await searchParams).simular === "1";
   const plant = await getCurrentPlant();
   if (!plant) {
     // o worker marca no kv quando a Solplanet devolveu zero usinas para esta conta
@@ -160,10 +162,10 @@ export default async function Home() {
       <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
         <div className="space-y-4 lg:col-span-2 lg:space-y-6">
           <div className="lg:hidden">
-            <EnergyHeroMobile plant={plant} inverter={inverter} />
+            <EnergyHeroMobile plant={plant} inverter={inverter} preview={preview} />
           </div>
           <div className="hidden lg:block">
-            <EnergyHeroDesktop plant={plant} inverter={inverter} lastUpdate={lastUpdate} />
+            <EnergyHeroDesktop plant={plant} inverter={inverter} lastUpdate={lastUpdate} preview={preview} />
           </div>
           <Card className="hidden lg:block">
             <CardHeader title="Histórico Diário — Últimos 30 Dias" subtitle="Geração diária em kWh" href="/historico" />

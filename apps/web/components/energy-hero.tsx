@@ -1,10 +1,9 @@
-import Image from "next/image";
 import type { PlantFlow } from "@sol/solplanet";
 import { n, power } from "@/lib/format";
 import type { Inverter, Plant } from "@/lib/queries";
 import { statusOf } from "@/lib/status";
-import { PlantScene, plantCoords } from "./plant-scene";
-import { Icon, Pill, Value } from "./ui";
+import { PlantScene, type SceneLabel } from "./plant-scene";
+import { Icon, Pill } from "./ui";
 
 interface Spot {
   label: string;
@@ -61,71 +60,25 @@ export function heroSpots(plant: Plant, inverter?: Inverter) {
   return { solar, right, left, grid: gridSpot, pvW };
 }
 
-function Dot({ tone }: { tone: "mint" | "sun" }) {
-  return <span className={`h-2 w-2 rounded-full ${tone === "mint" ? "bg-mint" : "bg-sun"}`} />;
+const toLabel = (s: Spot): SceneLabel => ({ label: s.label, value: s.value, unit: s.unit, note: s.note, tone: s.dot });
+
+/** Os 4 pontos da casa no formato da cena (rótulos desenhados no SVG). */
+function sceneLabels(s: ReturnType<typeof heroSpots>) {
+  return { left: toLabel(s.left), solar: toLabel(s.solar), inverter: toLabel(s.right), bottom: toLabel(s.grid) };
 }
 
-function SpotInline({ s, align = "left", big = false }: { s: Spot; align?: "left" | "right"; big?: boolean }) {
-  return (
-    <div className={`flex flex-col ${align === "right" ? "items-end text-right" : ""}`}>
-      <span className="flex items-center gap-1.5 text-[13px] font-medium text-ink-2">
-        {align === "left" && <Dot tone={s.dot} />}
-        {s.label}
-        {align === "right" && <Dot tone={s.dot} />}
-      </span>
-      <span className="mt-0.5 flex items-center gap-1.5">
-        <Value value={s.value} unit={s.unit} size={big ? "lg" : "md"} />
-        {s.badge}
-      </span>
-    </div>
-  );
-}
-
-function SpotCard({ s, className }: { s: Spot; className: string }) {
-  return (
-    <div className={`absolute z-10 min-w-36 rounded-2xl bg-surface/95 px-4 py-3 shadow-card backdrop-blur ${className}`}>
-      <div className="flex items-center justify-between gap-3">
-        <span className="flex items-center gap-1.5 text-[13px] font-medium text-ink-2">
-          <Dot tone={s.dot} />
-          {s.label}
-        </span>
-        {s.badge}
-      </div>
-      <Value value={s.value} unit={s.unit} size="lg" className="mt-1" />
-      {s.note && <div className="mt-0.5 text-[11px] font-medium text-ink-2">{s.note}</div>}
-    </div>
-  );
-}
-
-/** Versão mobile: rótulos acima e abaixo da imagem (design "Início · mobile"). */
-export function EnergyHeroMobile({ plant, inverter }: { plant: Plant; inverter?: Inverter }) {
+/** Versão mobile: a cena ocupa o card, com rótulos, endereço e sol dentro dela (como a referência). */
+export function EnergyHeroMobile({ plant, inverter, preview }: { plant: Plant; inverter?: Inverter; preview?: boolean }) {
   const s = heroSpots(plant, inverter);
   return (
-    <section className="relative overflow-hidden rounded-[2rem] bg-surface/80 p-4 shadow-card backdrop-blur-md">
-      <div className="mb-2 flex items-start justify-between">
-        <SpotInline s={s.solar} big />
-        <SpotInline s={s.right} align="right" />
-      </div>
-      <div className="relative h-56 overflow-hidden rounded-2xl">
-        {plantCoords(plant) ? (
-          <PlantScene plant={plant} pvW={s.pvW} compact />
-        ) : (
-          <>
-            <Image src="/img/casa-mobile.jpg" alt="Casa com painéis solares" fill priority sizes="100vw" className="object-cover" />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-white/50 via-transparent to-transparent" />
-          </>
-        )}
-      </div>
-      <div className="mt-2 flex items-end justify-between">
-        <SpotInline s={s.left} />
-        <SpotInline s={s.grid} align="right" />
-      </div>
+    <section className="relative h-[420px] overflow-hidden rounded-[2rem] shadow-card">
+      <PlantScene plant={plant} pvW={s.pvW} labels={sceneLabels(s)} inverterOk={plant.status === 1} compact preview={preview} />
     </section>
   );
 }
 
-/** Versão desktop: cards flutuando sobre a casa (design "Visão geral · desktop"). */
-export function EnergyHeroDesktop({ plant, inverter, lastUpdate }: { plant: Plant; inverter?: Inverter; lastUpdate: string }) {
+/** Versão desktop: rótulos sobre a cena da casa, com linhas até o painel e o inversor. */
+export function EnergyHeroDesktop({ plant, inverter, lastUpdate, preview }: { plant: Plant; inverter?: Inverter; lastUpdate: string; preview?: boolean }) {
   const s = heroSpots(plant, inverter);
   const flow = (plant.flow ?? null) as PlantFlow | null;
   const load = Number(flow?.load ?? 0);
@@ -167,16 +120,8 @@ export function EnergyHeroDesktop({ plant, inverter, lastUpdate }: { plant: Plan
           </span>
         </div>
       </div>
-      <div className="relative h-[420px] overflow-hidden rounded-3xl bg-gradient-to-b from-surface-low to-white">
-        {plantCoords(plant) ? (
-          <PlantScene plant={plant} pvW={s.pvW} />
-        ) : (
-          <Image src="/img/casa-desktop.jpg" alt="Casa com painéis solares" fill priority sizes="60vw" className="object-cover" />
-        )}
-        <SpotCard s={s.solar} className="left-6 top-6" />
-        <SpotCard s={s.right} className="right-6 top-6" />
-        <SpotCard s={s.left} className="bottom-6 left-6" />
-        <SpotCard s={s.grid} className="bottom-6 right-6" />
+      <div className="relative h-[440px] overflow-hidden rounded-3xl">
+        <PlantScene plant={plant} pvW={s.pvW} labels={sceneLabels(s)} inverterOk={plant.status === 1} preview={preview} />
       </div>
       <div className="mt-6 flex items-center gap-3 rounded-2xl bg-surface-low px-4 py-3">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint text-white">

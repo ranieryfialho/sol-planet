@@ -4,3 +4,6 @@ node_modules/
 *.xapk
 *.tsbuildinfo
 next-env.d.ts
+
+# vídeos de referência (não versionar)
+*.mp4
