@@ -5,6 +5,8 @@ name: Deploy Solar
 on:
   push:
     branches: [main]
+    # só documentação não precisa reconstruir e reiniciar os containers
+    paths-ignore: ["**.md"]
   workflow_dispatch:
 
 concurrency:

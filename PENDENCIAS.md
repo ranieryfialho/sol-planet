@@ -38,6 +38,7 @@ Cada conta pareia o **próprio número** numa instância nomeada `solar-<login>-
 - [X] Relatórios diário, semanal e mensal, e um exemplo de cada alerta (17 mensagens), enviados ao número pareado e aprovados no formato (31/10).
 - [X] Lista de contatos na tela funcionou (31/10).
 - [X] Botão **Testar** (Ajustes) funcionou (31/10). Falta só o `pnpm --filter @sol/worker cli test`.
+- [x] Sem destinatários cadastrados, os avisos (alertas, relatórios e o botão Testar) vão para o **próprio número conectado** (31/10). Se o WhatsApp estiver desconectado, nada é enviado.
 - [X] Instância antiga `solar-1` apagada; a atual (`solar-ranieryfialho-1`) está pareada e trazendo informações corretas.
 - [ ] Usar **chip secundário**: a conexão não é oficial e o número pode ser banido.
 - [X] **Privacidade (decisão em 31/10: manter a Evolution compartilhada da VPS, sem subir outra).** Ela tem `DATABASE_SAVE_DATA_NEW_MESSAGE/CHATS/MESSAGE_UPDATE=true` e `CONTACTS=true`, então grava no seu Postgres as mensagens, chats e contatos dos números pareados (inclusive os do irmão e do amigo). Você não gostou disso; ficou como está por ora. Para reduzir, sem outra Evolution: desligar `NEW_MESSAGE`, `MESSAGE_UPDATE` e `CHATS` (o seletor de contatos precisa só de `CONTACTS`), se o `status-monitor` e os outros apps não dependerem delas. Os amigos devem ser avisados de que isso é guardado.
@@ -106,6 +107,8 @@ Cada conta pareia o **próprio número** numa instância nomeada `solar-<login>-
 - [ ] Alerta do **mês** só funciona com 14+ dias de meses anteriores; a usina tem desde 13/10, então só vale a partir de dezembro.
 - [ ] Observar 1 ou 2 dias com coleta de 2 min: erros 403/429 ou falha de login na API da Solplanet.
 - [ ] Testar o fluxo do WhatsApp com a conta do irmão e a do amigo (cada um pareia o próprio número).
+- [x] Primeiro acesso: a tela mostra "Bem-vindo! Estamos buscando os seus dados" e o worker coleta a conta nova em até ~15 s (antes esperava o ciclo de 2 min). A coleta do histórico ainda leva 1 a 3 min.
+- [x] Diagnóstico de conta: `pnpm --filter @sol/worker cli check <email>` (pede a senha sem mostrar, não grava nada). Se uma conta entrar e não vier usina, a tela diz que a conta não tem usinas. Hipótese não confirmada: o filtro `own=1` esconder usinas compartilhadas; só tratar se o `check` mostrar usina em `own=0/2`.
 - [ ] Na VPS: definir `AUTH_SECRET` (cifra as senhas das contas; trocá-lo deixa as senhas ilegíveis até cada pessoa entrar de novo) e `ADMIN_ACCOUNT`.
 - [ ] Decidir se `/feio` e `/feio/api` ficam em produção (estão atrás do login, mas mostram dados crus).
 - [ ] Usina compartilhada entre duas contas: a última a coletar vira dona. Tratar se acontecer.
