@@ -2,6 +2,7 @@ import { addMember, alerts, dailyEnergy, getKv, getSettings, inverters, kv, plan
 import { chartSeries, PLANT_STATUS, SolplanetClient, SolplanetError, type ParamRow, type PlantFlow, type PlantSummary } from "@sol/solplanet";
 import { eq, sql } from "drizzle-orm";
 import { addDays, config, localNow, zonedMidnight } from "./config";
+import { resolveToday, type Carry } from "./rollover";
 import { runRules } from "./rules";
 import { notify, notifyAlert, type Who } from "./whatsapp";
 
@@ -132,10 +133,11 @@ export class Collector {
     }
     for (const p of list) {
       // a usina precisa existir antes da vinculação (chave estrangeira)
+      let todayKwh = num(p.etoday) ?? 0;
       if (!claimed.has(p.stationid)) {
         claimed.add(p.stationid);
         try {
-          await this.savePlant(p);
+          todayKwh = await this.savePlant(p);
         } catch (e) {
           claimed.delete(p.stationid); // outra conta que enxergue a usina ainda pode coletá-la neste ciclo
           throw e;
@@ -144,20 +146,28 @@ export class Collector {
       await addMember(this.db, this.accountId, p.stationid);
       // regras e alertas são desta conta, mesmo que outra conta tenha coletado a usina
       const now = new Date();
-      await this.evaluate(p.stationid, p.stationname, Number(p.status), num(p.power) ?? 0, num(p.etoday) ?? 0, now);
+      await this.evaluate(p.stationid, p.stationname, Number(p.status), num(p.power) ?? 0, todayKwh, now);
       await runRules(this.db, this.who, this.settings, p.stationid, now, localNow(now));
     }
     if (this.settings.rules.inverterErrors) await this.checkErrors();
   }
 
-  private async savePlant(p: PlantSummary) {
+  private async savePlant(p: PlantSummary): Promise<number> {
     const now = new Date();
-    const { day } = localNow(now);
+    const { day, time } = localNow(now);
     const id = p.stationid;
     const status = Number(p.status);
     const powerW = num(p.power) ?? 0;
-    const todayKwh = num(p.etoday) ?? 0;
     const totalKwh = num(p.etotal) ?? 0;
+
+    // a API não zera o "hoje" à meia-noite (ver rollover.ts): o valor de ontem congelado conta como 0
+    const carryKey = `etoday_carry:${id}`;
+    const resolved = resolveToday(await getKv<Carry>(this.db, carryKey), day, toMinutes(time), num(p.etoday) ?? 0, powerW);
+    const todayKwh = resolved.todayKwh;
+    await this.db
+      .insert(kv)
+      .values({ key: carryKey, value: resolved.carry })
+      .onConflictDoUpdate({ target: kv.key, set: { value: resolved.carry, updatedAt: new Date() } });
 
     const [detailRes, flow] = await Promise.all([
       this.optional("detalhe da usina", () => this.client.plantDetail(id)) as Promise<Record<string, any> | undefined>,
@@ -218,6 +228,7 @@ export class Collector {
     const startDay = detail?.startdt ? localNow(new Date(Number(detail.startdt))).day : null;
     await this.syncHistory(id, sns, startDay);
     console.log(`${p.stationname}: ${statusLabel(status)} | ${fmtW(powerW)} | hoje ${todayKwh} kWh`);
+    return todayKwh;
   }
 
   /** Grava os inversores (pmuList[].invlist[]) com parâmetros em tempo real. Devolve os números de série. */
@@ -302,11 +313,12 @@ export class Collector {
       .insert(powerPoints)
       .values(rows)
       .onConflictDoUpdate({ target: [powerPoints.plantId, powerPoints.ts], set: { powerW: sql`excluded.power_w` } });
+    // a curva é a fonte do pico do dia (atribui, não "maior que o anterior"): um valor ruim gravado antes se corrige
     const peak = Math.max(...rows.map((r) => r.powerW));
     if (peak > 0) {
       await this.db
         .update(dailyEnergy)
-        .set({ peakW: sql`greatest(${dailyEnergy.peakW}, ${peak})` })
+        .set({ peakW: peak })
         .where(sql`${dailyEnergy.plantId} = ${plantId} and ${dailyEnergy.day} = ${day}`);
     }
   }
@@ -328,7 +340,9 @@ export class Collector {
       .values(rows)
       .onConflictDoUpdate({
         target: [dailyEnergy.plantId, dailyEnergy.day],
-        set: { energyKwh: sql`greatest(${dailyEnergy.energyKwh}, excluded.energy_kwh)` },
+        // dias passados: o gráfico mensal do app é a palavra final (corrige valor errado gravado antes);
+        // hoje: o maior valor, porque o gráfico demora a atualizar
+        set: { energyKwh: sql`case when ${dailyEnergy.day} < ${today} then excluded.energy_kwh else greatest(${dailyEnergy.energyKwh}, excluded.energy_kwh) end` },
       });
   }
 

@@ -91,6 +91,8 @@ export function House3D(props: House3DProps) {
     let raf = 0;
     let teardown: (() => void) | undefined;
     let kick: (() => void) | undefined;
+    // "reduzir movimento" (Windows sem efeitos de animação, economia de bateria): só tira o balanço da câmera.
+    // A luz correndo nos fios continua, porque ela é a informação da cena (a energia fluindo), não enfeite.
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     async function start() {
@@ -387,7 +389,7 @@ export function House3D(props: House3DProps) {
       const t0 = performance.now();
       const frame = (now: number) => {
         const p = propsRef.current;
-        const t = reduced ? 0 : (now - t0) / 1000;
+        const t = (now - t0) / 1000;
         const ang = camBase + (reduced ? 0 : Math.sin(t * 0.22) * 0.05);
         const elev = 0.24;
         camera.position.set(
@@ -399,7 +401,7 @@ export function House3D(props: House3DProps) {
 
         const period = 3 - 1.7 * Math.min(1, Math.max(0, p.ratio));
         for (const f of flows) {
-          const head = f.on() ? (reduced ? 0.7 : ((t / period + f.phase) % 1) * 1.45) : -1;
+          const head = f.on() ? ((t / period + f.phase) % 1) * 1.45 : -1;
           for (const m of f.mats) m.uniforms.uHead!.value = head;
         }
         renderer.render(scene, camera);
@@ -440,7 +442,7 @@ export function House3D(props: House3DProps) {
 
       const loop = (now: number) => {
         frame(now);
-        raf = visible && document.visibilityState === "visible" && !reduced ? requestAnimationFrame(loop) : 0;
+        raf = visible && document.visibilityState === "visible" ? requestAnimationFrame(loop) : 0;
       };
       redrawRef.current = () => {
         applyMood();
@@ -451,7 +453,6 @@ export function House3D(props: House3DProps) {
       };
       document.addEventListener("visibilitychange", kick);
       kick();
-      if (reduced) requestAnimationFrame(frame);
       host.dataset.ready = "1";
 
       teardown = () => {
