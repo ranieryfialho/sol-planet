@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { Db } from "./index";
-import { kv } from "./schema";
+import { accountPlants, kv, plants } from "./schema";
+import { hhmm24, sunTimes } from "./sun";
 
 export interface Recipient {
   id: string;
@@ -18,6 +19,8 @@ export interface Settings {
     offlineMinutes: number;
     /** só considera offline como falha dentro da janela */
     daylightOnly: boolean;
+    /** a janela vem do nascer e pôr do sol da usina; dayStart/dayEnd só valem com isto desligado */
+    dayAuto: boolean;
     dayStart: string;
     dayEnd: string;
     inverterErrors: boolean;
@@ -70,6 +73,7 @@ export function defaultSettings(env = process.env): Settings {
       offline: true,
       offlineMinutes: Number(env.OFFLINE_GRACE_MINUTES ?? 20),
       daylightOnly: true,
+      dayAuto: true,
       dayStart: start,
       dayEnd: end,
       inverterErrors: true,
@@ -87,7 +91,7 @@ export function defaultSettings(env = process.env): Settings {
       monthly: true,
       monthlyPct: 15,
       staleData: true,
-      staleMinutes: 15,
+      staleMinutes: 30,
       weeklySummary: true,
       monthlyReport: true,
     },
@@ -100,14 +104,32 @@ export async function getSettings(db: Db, accountId: number): Promise<Settings> 
   const [row] = await db.select().from(kv).where(eq(kv.key, accountKey("settings", accountId)));
   // conta sem ajustes salvos (a principal já recebe os do .env ao ser criada): nada de herdar destinatários
   const base = row ? defaultSettings() : { ...defaultSettings(), recipients: [] };
-  if (!row) return base;
-  const saved = row.value as Partial<Settings>;
-  return {
+  const saved = (row?.value ?? {}) as Partial<Settings>;
+  const merged: Settings = {
     ...base,
     ...saved,
     rules: { ...base.rules, ...saved.rules },
     report: { ...base.report, ...saved.report },
   };
+  if (merged.rules.dayAuto) {
+    const window = await sunWindow(db, accountId);
+    if (window) Object.assign(merged.rules, window);
+  }
+  return merged;
+}
+
+/** Janela do dia (nascer–pôr do sol de hoje) pela coordenada da primeira usina da conta; null sem coordenada. */
+async function sunWindow(db: Db, accountId: number) {
+  const rows = await db
+    .select({ lat: plants.latitude, lon: plants.longitude })
+    .from(accountPlants)
+    .innerJoin(plants, eq(plants.id, accountPlants.plantId))
+    .where(eq(accountPlants.accountId, accountId));
+  const p = rows.find((r) => r.lat != null && r.lon != null && (r.lat !== 0 || r.lon !== 0));
+  if (!p) return null;
+  const { rise, set } = sunTimes(new Date(), p.lat!, p.lon!);
+  if (Number.isNaN(rise.getTime()) || Number.isNaN(set.getTime())) return null;
+  return { dayStart: hhmm24(rise), dayEnd: hhmm24(set) };
 }
 
 export async function saveSettings(db: Db, accountId: number, settings: Settings) {

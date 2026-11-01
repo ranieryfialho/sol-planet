@@ -349,7 +349,8 @@ export class Collector {
   private inDaylight(now: Date) {
     const { time } = localNow(now);
     const t = toMinutes(time);
-    return t >= toMinutes(this.settings.rules.dayStart) && t < toMinutes(this.settings.rules.dayEnd);
+    // o inversor só acorda um pouco depois do nascer do sol: 30 min de folga para não alertar offline no amanhecer
+    return t >= toMinutes(this.settings.rules.dayStart) + 30 && t < toMinutes(this.settings.rules.dayEnd);
   }
 
   /**

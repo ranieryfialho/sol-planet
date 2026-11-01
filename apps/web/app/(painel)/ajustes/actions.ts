@@ -25,6 +25,7 @@ export async function updateSettings(next: Settings) {
     rules: {
       ...next.rules,
       offlineMinutes: Math.min(240, Math.max(5, Math.round(Number(next.rules.offlineMinutes) || 20))),
+      dayAuto: next.rules.dayAuto !== false,
       dayStart: HHMM.test(next.rules.dayStart) ? next.rules.dayStart : "07:00",
       dayEnd: HHMM.test(next.rules.dayEnd) ? next.rules.dayEnd : "17:00",
       lowGenerationPct: clamp(next.rules.lowGenerationPct, 5, 90, 20),
@@ -33,7 +34,7 @@ export async function updateSettings(next: Settings) {
       stringImbalancePct: clamp(next.rules.stringImbalancePct, 10, 90, 40),
       gridImportKwh: clamp(next.rules.gridImportKwh, 0, 1000, 0),
       monthlyPct: clamp(next.rules.monthlyPct, 5, 90, 15),
-      staleMinutes: clamp(next.rules.staleMinutes, 6, 240, 15),
+      staleMinutes: clamp(next.rules.staleMinutes, 6, 240, 30),
     },
     report: { enabled: Boolean(next.report.enabled), time: HHMM.test(next.report.time) ? next.report.time : "19:00" },
     tariff: Math.max(0, Number(next.tariff) || 0),

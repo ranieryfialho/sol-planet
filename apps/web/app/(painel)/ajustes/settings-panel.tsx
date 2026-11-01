@@ -323,11 +323,19 @@ export function SettingsPanel({ initial, whatsapp, lastReportAt, account }: { in
           icon="schedule"
           title={
             <>
-              Apenas entre <input type="time" className={inputCls} value={s.rules.dayStart} onChange={(e) => rules({ dayStart: e.target.value })} /> e{" "}
-              <input type="time" className={inputCls} value={s.rules.dayEnd} onChange={(e) => rules({ dayEnd: e.target.value })} />
+              Apenas entre <input type="time" disabled={s.rules.dayAuto} className={`${inputCls} disabled:opacity-60`} value={s.rules.dayStart} onChange={(e) => rules({ dayStart: e.target.value })} /> e{" "}
+              <input type="time" disabled={s.rules.dayAuto} className={`${inputCls} disabled:opacity-60`} value={s.rules.dayEnd} onChange={(e) => rules({ dayEnd: e.target.value })} />{" "}
+              <button
+                type="button"
+                onClick={() => rules({ dayAuto: !s.rules.dayAuto })}
+                aria-pressed={s.rules.dayAuto}
+                className={`ml-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.rules.dayAuto ? "bg-sky-soft text-mint-dark" : "bg-sun-soft text-sun-dark"}`}
+              >
+                Auto
+              </button>
             </>
           }
-          subtitle="À noite o inversor desliga e aparece offline"
+          subtitle={s.rules.dayAuto ? "Nascer e pôr do sol da usina, atualizado todo dia" : "À noite o inversor desliga e aparece offline"}
         >
           <Toggle on={s.rules.daylightOnly} onChange={(v) => rules({ daylightOnly: v })} label="Somente durante o dia" />
         </Row>

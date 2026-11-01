@@ -47,7 +47,8 @@ async function raise(c: Ctx, kind: string, msg: string) {
   await c.db.insert(alerts).values({ plantId: c.plant.id, accountId: c.accountId, kind, message: msg, occurredAt: c.now, notifiedAt: c.now });
 }
 
-const afterSun = (c: Ctx) => mins(c.time) >= mins(c.settings.rules.dayEnd);
+/** 30 min depois do fim do dia: com a janela no pôr do sol, o total do dia ainda está fechando. */
+const afterSun = (c: Ctx) => mins(c.time) >= mins(c.settings.rules.dayEnd) + 30;
 /** Meio do dia: duas horas de folga do nascer e do pôr do sol, quando a geração ainda é baixa de propósito. */
 const midday = (c: Ctx) => mins(c.time) >= mins(c.settings.rules.dayStart) + 120 && mins(c.time) < mins(c.settings.rules.dayEnd) - 120;
 
@@ -98,8 +99,8 @@ async function lowCapacity(c: Ctx) {
 /** Em pleno dia, com o inversor "normal", mas sem gerar há N minutos. */
 async function zeroGeneration(c: Ctx) {
   const { rules } = c.settings;
-  // offline já tem alerta próprio
-  if (!rules.zeroGeneration || !midday(c) || c.plant.status === 0) return;
+  // offline, aviso e erro já têm alerta próprio; aqui só o status "normal"
+  if (!rules.zeroGeneration || !midday(c) || c.plant.status !== 1) return;
   const since = new Date(c.now.getTime() - rules.zeroGenerationMinutes * 60_000);
   const [{ n, mx }] = await c.db
     .select({ n: sql<number>`count(*)::int`, mx: sql<number>`coalesce(max(${readings.powerW}), 0)::float8` })

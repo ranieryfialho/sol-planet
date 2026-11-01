@@ -5,6 +5,7 @@ import * as schema from "./schema";
 export * from "./accounts";
 export * from "./schema";
 export * from "./settings";
+export { sunTimes } from "./sun";
 export { schema };
 
 export function createDb(url = process.env.DATABASE_URL) {
