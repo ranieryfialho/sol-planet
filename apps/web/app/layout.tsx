@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { cookies } from "next/headers";
+import { sunState } from "@/lib/sun";
+import { THEME_COOKIE } from "@/lib/theme";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-jakarta" });
@@ -10,13 +13,19 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#dcebfa",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#dcebfa" },
+    { media: "(prefers-color-scheme: dark)", color: "#16213d" },
+  ],
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // o tema segue o sol da usina (ThemeSync grava o cookie); sem cookie ainda, 6h–18h
+  const saved = (await cookies()).get(THEME_COOKIE)?.value;
+  const theme = saved === "dark" || saved === "light" ? saved : sunState(null).isDay ? "light" : "dark";
   return (
-    <html lang="pt-BR" className={jakarta.variable}>
+    <html lang="pt-BR" className={jakarta.variable} data-theme={theme} suppressHydrationWarning>
       <head>
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link

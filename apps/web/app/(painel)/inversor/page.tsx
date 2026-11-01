@@ -1,7 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { ParamRow } from "@sol/solplanet";
 import { PowerArea } from "@/components/charts";
+import { heroSpots, sceneLabels } from "@/components/energy-hero";
+import { PlantScene } from "@/components/plant-scene";
 import { Card, CardHeader, EmptyState, Icon, IconBadge, Pill, Value } from "@/components/ui";
 import { fmtPower, n, power, timeAgo } from "@/lib/format";
 import { getCurrentPlant, getInverters, getTodayReadings, TZ } from "@/lib/queries";
@@ -57,6 +58,8 @@ export default async function Inversor({ searchParams }: { searchParams: Promise
     { label: "Hoje", icon: "today", tone: "mint" as const, value: n(plant.todayKwh, 1), unit: "kWh" },
   ].filter(Boolean) as { label: string; icon: string; tone: "mint" | "sun" | "sky"; value: string; unit?: string; hint?: string; hintTone?: string }[];
 
+  const spots = heroSpots(plant, inv);
+  const sceneOk = online && plant.status === 1;
   const pvTotal = pv.reduce((s, r) => s + (num(r.p) ?? 0), 0);
   const points = readings.map((r) => ({ t: r.ts.getTime(), power: r.powerW, load: null }));
   const peak = readings.reduce((m, r) => Math.max(m, r.powerW ?? 0), 0);
@@ -87,8 +90,11 @@ export default async function Inversor({ searchParams }: { searchParams: Promise
           </div>
           <IconBadge name="solar_power" tone="sky" />
         </div>
-        <div className="relative mt-4 h-52 overflow-hidden rounded-3xl bg-surface-low">
-          <Image src="/img/inversor.jpg" alt="Inversor" fill sizes="(min-width: 768px) 700px, 100vw" className="object-cover" />
+        <div className="relative mt-4 h-[420px] overflow-hidden rounded-3xl bg-surface-low md:hidden">
+          <PlantScene plant={plant} pvW={spots.pvW} labels={sceneLabels(spots)} inverterOk={sceneOk} compact />
+        </div>
+        <div className="relative mt-4 hidden h-[440px] overflow-hidden rounded-3xl bg-surface-low md:block">
+          <PlantScene plant={plant} pvW={spots.pvW} labels={sceneLabels(spots)} inverterOk={sceneOk} />
         </div>
         <div className="mt-4 flex items-center justify-between rounded-full bg-surface-low px-4 py-2.5 text-sm">
           <span className="flex items-center gap-2">

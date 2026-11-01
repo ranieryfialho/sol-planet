@@ -31,6 +31,8 @@ export function instanceName(accountId: number, login: string, env = process.env
   return `${env.EVOLUTION_INSTANCE_PREFIX ?? "solar"}-${slug(login)}-${accountId}`;
 }
 
+export const AUTO_FOOTER = "\n\n_🤖 Mensagem automática do monitor Solar. Não precisa responder._";
+
 export function evolutionFor(accountId: number, login: string, env = process.env) {
   return new Evolution({ ...evolutionFromEnv(env), instance: instanceName(accountId, login, env) });
 }
@@ -68,8 +70,9 @@ export class Evolution {
     return res.json() as Promise<T>;
   }
 
+  /** Toda mensagem sai com o aviso de que é automática: quem recebe sabe de onde veio e que não adianta responder. */
   sendText(number: string, text: string) {
-    return this.call(`/message/sendText/${this.cfg.instance}`, { method: "POST", body: JSON.stringify({ number, text }) });
+    return this.call(`/message/sendText/${this.cfg.instance}`, { method: "POST", body: JSON.stringify({ number, text: `${text}${AUTO_FOOTER}` }) });
   }
 
   async state(): Promise<{ state: ConnectionState; number?: string }> {

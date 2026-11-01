@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 // só tipos: o three em si é carregado sob demanda (import dinâmico), quando a cena aparece na tela
 import type * as THREE from "three";
 
@@ -22,6 +22,8 @@ export interface House3DProps {
   labels: { left: SceneLabel; solar: SceneLabel; inverter: SceneLabel; bottom: SceneLabel };
   address: string | null;
   sunLine: string | null;
+  /** coordenada da usina, para o mapa de fundo */
+  coords: { lat: number; lon: number } | null;
   compact?: boolean;
   /** pré-visualização (?simular=1): mostra a cena de dia, gerando */
   preview?: boolean;
@@ -490,11 +492,12 @@ export function House3D(props: House3DProps) {
     };
   }, []);
 
-  const { labels, isDay, compact, address, sunLine, preview } = props;
+  const { labels, isDay, compact, address, sunLine, preview, coords } = props;
   const order = [labels.solar, labels.inverter, labels.left, labels.bottom];
   return (
     <div ref={hostRef} className="absolute inset-0" role="img" aria-label={props.ariaLabel}>
-      <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #dbe7f7 0%, #edf2f9 50%, #f6f7fa 100%)" }} />
+      <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, var(--scene-top) 0%, var(--scene-mid) 50%, var(--map-fade) 100%)" }} />
+      {coords && <SceneMap coords={coords} dark={!isDay} />}
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
       <svg className="pointer-events-none absolute inset-0 h-full w-full">
@@ -504,7 +507,7 @@ export function House3D(props: House3DProps) {
             ref={(el) => {
               lineRefs.current[i] = el;
             }}
-            stroke="#6b7280"
+            stroke="var(--color-ink-3)"
             strokeOpacity={0.6}
             strokeWidth={1}
           />
@@ -526,7 +529,7 @@ export function House3D(props: House3DProps) {
 
       <div className="absolute left-3 right-3 top-3 flex items-start justify-between gap-2">
         {(address || sunLine) && (
-          <div className={`flex min-w-0 items-center gap-1.5 bg-white/75 px-3 py-1.5 text-[12px] text-ink-2 backdrop-blur ${compact ? "rounded-2xl" : "rounded-full"}`}>
+          <div className={`flex min-w-0 items-center gap-1.5 bg-surface/75 px-3 py-1.5 text-[12px] text-ink-2 backdrop-blur ${compact ? "rounded-2xl" : "rounded-full"}`}>
             <span className="material-symbols-outlined icon-fill shrink-0 text-[15px] text-sun" aria-hidden>
               location_on
             </span>
@@ -544,7 +547,7 @@ export function House3D(props: House3DProps) {
             )}
           </div>
         )}
-        <span className="flex shrink-0 items-center gap-1 rounded-full bg-white/75 px-2.5 py-1.5 text-[12px] text-ink-2 backdrop-blur">
+        <span className="flex shrink-0 items-center gap-1 rounded-full bg-surface/75 px-2.5 py-1.5 text-[12px] text-ink-2 backdrop-blur">
           <span className="material-symbols-outlined icon-fill text-[15px]" style={{ color: isDay ? "#f28c28" : "#6366f1" }} aria-hidden>
             {isDay ? "light_mode" : "dark_mode"}
           </span>
@@ -553,6 +556,77 @@ export function House3D(props: House3DProps) {
       </div>
     </div>
   );
+}
+
+/**
+ * Mapa minimalista da vizinhança como fundo: some em degradê no topo e na base (para os rótulos continuarem
+ * legíveis e a cena fundir com o card) e ganha uma vinheta. Usa o mapa estilizado do Google (/api/mapa) quando há
+ * chave; sem ela, cai nos tiles do OpenStreetMap (sem chave), dessaturados por filtro CSS e centrados na coordenada da usina.
+ */
+function SceneMap({ coords, dark }: { coords: { lat: number; lon: number }; dark: boolean }) {
+  const [google, setGoogle] = useState(true);
+  const fade = "linear-gradient(180deg, transparent 0%, #000 28%, #000 62%, transparent 100%)";
+  return (
+    <>
+      <div
+        className="absolute inset-0 overflow-hidden opacity-70 transition-opacity duration-700"
+        style={{ maskImage: fade, WebkitMaskImage: fade }}
+      >
+        {google ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/api/mapa?lat=${coords.lat.toFixed(5)}&lon=${coords.lon.toFixed(5)}&tema=${dark ? "dark" : "light"}`}
+            alt=""
+            aria-hidden
+            onError={() => setGoogle(false)}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <OsmTiles coords={coords} dark={dark} />
+        )}
+      </div>
+      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 50% 55%, transparent 35%, var(--map-fade) 100%)", opacity: 0.55 }} />
+      {!google && (
+        <span className="absolute bottom-1 right-2 text-[9px] text-ink-3 opacity-70">© OpenStreetMap</span>
+      )}
+    </>
+  );
+}
+
+const TILE_Z = 16;
+
+/**
+ * Grade de tiles 256px do OpenStreetMap centrada na coordenada (cobre ~1280×768, mais que qualquer cena).
+ * O filtro tira a cor e os rótulos ficam só como textura: claro = cinza suave, escuro = inversão azulada.
+ */
+function OsmTiles({ coords, dark }: { coords: { lat: number; lon: number }; dark: boolean }) {
+  const n = 2 ** TILE_Z;
+  const latR = (coords.lat * Math.PI) / 180;
+  const x = ((coords.lon + 180) / 360) * n;
+  const y = ((1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2) * n;
+  const filter = dark
+    ? "grayscale(1) invert(1) brightness(0.55) contrast(0.9) sepia(0.3) hue-rotate(185deg) blur(0.8px)"
+    : "grayscale(1) brightness(1.08) contrast(0.8) blur(0.8px)";
+  const tiles: React.ReactNode[] = [];
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -2; dx <= 2; dx++) {
+      const tx = Math.floor(x) + dx;
+      const ty = Math.floor(y) + dy;
+      // eslint-disable-next-line @next/next/no-img-element
+      tiles.push(
+        <img
+          key={`${tx}/${ty}`}
+          src={`https://tile.openstreetmap.org/${TILE_Z}/${tx}/${ty}.png`}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="absolute h-[256px] w-[256px] max-w-none"
+          style={{ left: `calc(50% + ${(tx - x) * 256}px)`, top: `calc(50% + ${(ty - y) * 256}px)`, filter }}
+        />,
+      );
+    }
+  }
+  return <>{tiles}</>;
 }
 
 function Label({ l, compact }: { l: SceneLabel; compact?: boolean }) {

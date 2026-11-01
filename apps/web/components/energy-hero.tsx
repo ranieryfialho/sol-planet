@@ -63,7 +63,7 @@ export function heroSpots(plant: Plant, inverter?: Inverter) {
 const toLabel = (s: Spot): SceneLabel => ({ label: s.label, value: s.value, unit: s.unit, note: s.note, tone: s.dot });
 
 /** Os 4 pontos da casa no formato da cena (rótulos desenhados no SVG). */
-function sceneLabels(s: ReturnType<typeof heroSpots>) {
+export function sceneLabels(s: ReturnType<typeof heroSpots>) {
   return { left: toLabel(s.left), solar: toLabel(s.solar), inverter: toLabel(s.right), bottom: toLabel(s.grid) };
 }
 

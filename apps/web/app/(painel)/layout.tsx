@@ -1,8 +1,11 @@
 import { logout } from "@/app/login/actions";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { BottomNav, MobileHeader, Sidebar } from "@/components/nav";
-import { getPlants } from "@/lib/queries";
+import { plantCoords } from "@/components/plant-scene";
+import { ThemeSync } from "@/components/theme-sync";
+import { getCurrentPlant, getPlants } from "@/lib/queries";
 import { statusOf } from "@/lib/status";
+import { sunState } from "@/lib/sun";
 
 export const dynamic = "force-dynamic";
 
@@ -39,9 +42,12 @@ async function SidebarFooter() {
   );
 }
 
-export default function PainelLayout({ children }: { children: React.ReactNode }) {
+export default async function PainelLayout({ children }: { children: React.ReactNode }) {
+  const plant = await getCurrentPlant().catch(() => undefined);
+  const theme = sunState(plant ? plantCoords(plant) : null).isDay ? "light" : "dark";
   return (
     <>
+      <ThemeSync theme={theme} />
       <AutoRefresh seconds={30} />
       <Sidebar footer={<SidebarFooter />} />
       <MobileHeader />

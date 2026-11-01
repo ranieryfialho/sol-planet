@@ -39,16 +39,66 @@
   --shadow-sheet: 0 20px 40px -10px rgba(15, 23, 42, 0.12);
 }
 
+:root {
+  --bg-top: #dcebfa;
+  --bg-base: #f3f5f7;
+  --map-fade: #f6f7fa;
+  --scene-top: #dbe7f7;
+  --scene-mid: #edf2f9;
+}
+
 html {
   color-scheme: light;
 }
 
+/* Tema pelo sol da usina: de noite o painel inteiro vira escuro (data-theme é definido por ThemeSync / cookie) */
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-ink: #e6ebf5;
+  --color-ink-2: #aab4c8;
+  --color-ink-3: #7b86a0;
+  --color-line: #263049;
+
+  --color-mint: #2ccf9c;
+  --color-mint-dark: #1db98a;
+  --color-mint-deep: #72fac7;
+  --color-mint-soft: #123a31;
+
+  --color-sun: #f59b3d;
+  --color-sun-dark: #ffb86b;
+  --color-sun-soft: #3d2a14;
+
+  --color-sky: #6b9bff;
+  --color-sky-soft: #172a4f;
+
+  --color-danger: #f87171;
+  --color-danger-soft: #3b1a1d;
+
+  --color-surface: #151c2e;
+  --color-surface-low: #1b2438;
+  --color-surface-mid: #222d45;
+  --color-surface-high: #2a3652;
+  --color-pill: #1f2940;
+
+  --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.45), 0 4px 10px -2px rgba(0, 0, 0, 0.3);
+  --shadow-pill: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-sheet: 0 20px 40px -10px rgba(0, 0, 0, 0.55);
+
+  --bg-top: #16213d;
+  --bg-base: #0b1020;
+  --map-fade: #151c2e;
+  --scene-top: #1a2644;
+  --scene-mid: #141c33;
+}
+
 body {
   min-height: 100dvh;
-  background: linear-gradient(180deg, #dcebfa 0%, #f3f5f7 420px, #f3f5f7 100%);
+  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-base) 420px, var(--bg-base) 100%);
   background-attachment: fixed;
   color: var(--color-ink);
   font-variant-numeric: tabular-nums;
+  transition: color 0.6s ease;
 }
 
 .material-symbols-outlined {

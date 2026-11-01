@@ -6,10 +6,10 @@ import { fmtPower, n } from "@/lib/format";
 
 const MINT = "#1db98a";
 const SUN = "#f28c28";
-const tick = { fill: "#9ca3af", fontSize: 11, fontWeight: 500 };
+const tick = { fill: "var(--color-ink-3)", fontSize: 11, fontWeight: 500 };
 
 function Bubble({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-full bg-ink px-3 py-1.5 text-xs font-semibold text-white shadow-sheet">{children}</div>;
+  return <div className="rounded-full bg-ink px-3 py-1.5 text-xs font-semibold text-surface shadow-sheet">{children}</div>;
 }
 
 export interface PowerPoint {
@@ -49,7 +49,7 @@ export function PowerArea({ data, tz, height = 160, axis = true }: { data: Power
         />
         <YAxis hide domain={[0, "auto"]} />
         <Tooltip
-          cursor={{ stroke: "#bbcac1", strokeDasharray: "3 3" }}
+          cursor={{ stroke: "var(--color-ink-3)", strokeDasharray: "3 3" }}
           content={({ active, payload, label }) =>
             active && payload?.length ? (
               <div className="rounded-2xl bg-surface px-3 py-2 text-xs shadow-sheet">
@@ -65,7 +65,7 @@ export function PowerArea({ data, tz, height = 160, axis = true }: { data: Power
             ) : null
           }
         />
-        <Area type="monotone" dataKey="power" connectNulls stroke={MINT} strokeWidth={2.5} fill="url(#solarFill)" isAnimationActive={false} activeDot={{ r: 5, stroke: MINT, strokeWidth: 2.5, fill: "#fff" }} />
+        <Area type="monotone" dataKey="power" connectNulls stroke={MINT} strokeWidth={2.5} fill="url(#solarFill)" isAnimationActive={false} activeDot={{ r: 5, stroke: MINT, strokeWidth: 2.5, fill: "var(--color-surface)" }} />
         {hasLoad && <Line type="monotone" dataKey="load" stroke={SUN} strokeWidth={1.8} strokeDasharray="3 3" dot={false} isAnimationActive={false} connectNulls />}
       </AreaChart>
     </ResponsiveContainer>
@@ -109,9 +109,9 @@ export function EnergyBars({ data, height = 220, average }: { data: BarPoint[]; 
           {average ? (
             <ReferenceLine
               y={average}
-              stroke="#bbcac1"
+              stroke="var(--color-ink-3)"
               strokeDasharray="4 4"
-              label={{ value: `Média: ${n(average, 1)} kWh`, position: "insideTopRight", fill: "#4b5563", fontSize: 11 }}
+              label={{ value: `Média: ${n(average, 1)} kWh`, position: "insideTopRight", fill: "var(--color-ink-2)", fontSize: 11 }}
             />
           ) : null}
           <Bar dataKey="energyKwh" radius={[6, 6, 6, 6]} isAnimationActive={false} onMouseEnter={(_, i) => setHover(i)}>
