@@ -1,13 +1,20 @@
-import { bigserial, boolean, date, doublePrecision, index, integer, jsonb, pgTable, primaryKey, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { bigserial, boolean, date, doublePrecision, index, integer, jsonb, pgTable, primaryKey, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
-/** Contas Solplanet que o dashboard aceita e o worker coleta (senha cifrada com AES-256-GCM). */
-export const accounts = pgTable("accounts", {
-  id: serial("id").primaryKey(),
-  /** login da conta Solplanet em minúsculas (e-mail ou telefone) */
-  account: text("account").notNull().unique(),
-  passwordEnc: text("password_enc").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+/** Contas (Solplanet ou Livoltek) que o dashboard aceita e o worker coleta (senha cifrada com AES-256-GCM). */
+export const accounts = pgTable(
+  "accounts",
+  {
+    id: serial("id").primaryKey(),
+    /** fornecedor do app: solplanet | livoltek */
+    provider: text("provider").notNull().default("solplanet"),
+    /** login da conta no app do fornecedor, em minúsculas (e-mail, telefone ou usuário) */
+    account: text("account").notNull(),
+    passwordEnc: text("password_enc").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  // o mesmo e-mail pode ter conta nos dois fornecedores
+  (t) => [uniqueIndex("accounts_provider_account_idx").on(t.provider, t.account)],
+);
 
 /** Estado atual de cada usina (uma linha por stationid). */
 export const plants = pgTable("plants", {

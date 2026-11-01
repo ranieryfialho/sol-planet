@@ -1,7 +1,8 @@
-import { accountKey, createDb, decryptSecret, getKv, kv, listAccounts, upsertAccount } from "@sol/db";
+import { accountKey, createDb, decryptSecret, getKv, getSettings, kv, listAccounts, upsertAccount } from "@sol/db";
 import { runMigrations } from "@sol/db/migrate";
 import { sql } from "drizzle-orm";
 import { Collector } from "./collector";
+import { LivoltekCollector } from "./livoltek-collector";
 import { config, localNow } from "./config";
 import { buildDailyReport, buildMonthlyReport, buildWeeklyReport, previousMonth } from "./report";
 import { notify } from "./whatsapp";
@@ -12,7 +13,21 @@ await runMigrations(db);
 // conta do .env (opcional): garante a linha em accounts e adota os dados do tempo de conta única
 if (config.solplanet.account && config.solplanet.password) await upsertAccount(db, config.solplanet.account, config.solplanet.password);
 
-const collectors = new Map<number, Collector>();
+type AnyCollector = Collector | LivoltekCollector;
+const collectors = new Map<number, AnyCollector>();
+
+/** Conta sem coleta porque a senha não abre: avisa no WhatsApp da própria conta, no máximo uma vez por dia. */
+async function warnUnreadablePassword(accountId: number, login: string) {
+  const key = accountKey("unreadable_pw", accountId);
+  const { day } = localNow();
+  if ((await getKv<string>(db, key)) === day) return;
+  await db.insert(kv).values({ key, value: day }).onConflictDoUpdate({ target: kv.key, set: { value: day, updatedAt: new Date() } });
+  await notify(
+    { id: accountId, login },
+    "🔑 O monitor não consegue entrar na sua conta e parou de coletar dados\nEntre de novo no dashboard (sair e entrar com a mesma senha) para reativar a coleta.",
+    await getSettings(db, accountId),
+  );
+}
 
 /** Sincroniza os coletores com a tabela accounts (contas entram pelo login do dashboard). */
 async function syncCollectors() {
@@ -21,15 +36,19 @@ async function syncCollectors() {
     if (password === null) {
       console.error(`[${acc.account}] senha ilegível (AUTH_SECRET mudou?): entre de novo no dashboard para regravar`);
       collectors.delete(acc.id);
+      await warnUnreadablePassword(acc.id, acc.account).catch((e) => console.error("aviso de senha ilegível falhou:", e));
       continue;
     }
     const known = collectors.get(acc.id);
     if (known) known.setPassword(password);
-    else collectors.set(acc.id, new Collector(db, acc.id, { account: acc.account, password }));
+    else {
+      const creds = { account: acc.account, password };
+      collectors.set(acc.id, acc.provider === "livoltek" ? new LivoltekCollector(db, acc.id, creds) : new Collector(db, acc.id, creds));
+    }
   }
 }
 
-async function maybeSendReport(c: Collector) {
+async function maybeSendReport(c: AnyCollector) {
   const { report } = c.settings;
   if (!report.enabled) return;
   const { day, time } = localNow();
@@ -48,7 +67,7 @@ async function maybeSendReport(c: Collector) {
 }
 
 /** Domingo, a partir do horário do relatório: resumo da semana (uma vez por semana). */
-async function maybeSendWeekly(c: Collector) {
+async function maybeSendWeekly(c: AnyCollector) {
   const { report, rules } = c.settings;
   if (!report.enabled || !rules.weeklySummary) return;
   const { day, time } = localNow();
@@ -67,7 +86,7 @@ async function pruneReadings() {
 }
 
 /** Dia 1, a partir do horário do relatório: resumo do mês que passou (uma vez por mês). */
-async function maybeSendMonthly(c: Collector) {
+async function maybeSendMonthly(c: AnyCollector) {
   const { report, rules } = c.settings;
   if (!report.enabled || !rules.monthlyReport) return;
   const { day, time } = localNow();
@@ -90,6 +109,8 @@ async function cycle() {
     for (const c of collectors.values()) {
       try {
         await c.tick(claimed);
+        // conta sem usina gravada (ex.: Livoltek aguardando o revendedor) não recebe relatório zerado
+        if (!c.hasPlants) continue;
         await maybeSendReport(c);
         await maybeSendWeekly(c);
         await maybeSendMonthly(c);

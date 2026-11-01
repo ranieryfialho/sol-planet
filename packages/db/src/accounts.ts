@@ -1,18 +1,24 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
-import { eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Db } from "./index";
 import { accountPlants, accounts, kv, plants } from "./schema";
 import { accountKey, defaultSettings } from "./settings";
 
 export type Account = typeof accounts.$inferSelect;
 
-/** Máximo de contas Solplanet aceitas (a principal do .env conta). */
+/** Fornecedores aceitos no login (cada um com o cliente da API em packages/). */
+export const PROVIDERS = ["solplanet", "livoltek"] as const;
+export type Provider = (typeof PROVIDERS)[number];
+export const isProvider = (v: unknown): v is Provider => PROVIDERS.includes(v as Provider);
+
+/** Máximo de contas aceitas, somando os fornecedores (a principal do .env conta). */
 export const maxAccounts = () => Number(process.env.MAX_ACCOUNTS ?? 3);
 
 export const normalizeAccount = (a: string) => a.trim().toLowerCase();
 
 /** Conta administradora (WhatsApp compartilhado): ADMIN_ACCOUNT, ou SOLPLANET_ACCOUNT do .env. */
 const adminAccount = () => process.env.ADMIN_ACCOUNT || process.env.SOLPLANET_ACCOUNT || "";
+/** A administradora é a conta Solplanet do .env (ADMIN_ACCOUNT pode apontar para qualquer login). */
 export const isPrimaryAccount = (a: string) => !!adminAccount() && normalizeAccount(a) === normalizeAccount(adminAccount());
 
 /** Segredo do app: AUTH_SECRET, ou (legado) derivado da credencial do .env. Sem nenhum dos dois, recusa em vez de usar um valor fixo. */
@@ -45,22 +51,26 @@ export function decryptSecret(enc: string) {
 
 export const listAccounts = (db: Db) => db.select().from(accounts).orderBy(accounts.id);
 
-export async function findAccount(db: Db, account: string) {
-  const [row] = await db.select().from(accounts).where(eq(accounts.account, normalizeAccount(account)));
+export async function findAccount(db: Db, account: string, provider: Provider = "solplanet") {
+  const [row] = await db
+    .select()
+    .from(accounts)
+    .where(and(eq(accounts.provider, provider), eq(accounts.account, normalizeAccount(account))));
   return row;
 }
 
 /** Cria ou atualiza a senha de uma conta. A conta principal adota os dados anteriores ao multiusuário. */
-export async function upsertAccount(db: Db, account: string, password: string): Promise<Account> {
+export async function upsertAccount(db: Db, account: string, password: string, provider: Provider = "solplanet"): Promise<Account> {
   const login = normalizeAccount(account);
   if (!login || !password) throw new Error("conta e senha são obrigatórias");
   const passwordEnc = encryptSecret(password);
   const [row] = await db
     .insert(accounts)
-    .values({ account: login, passwordEnc })
-    .onConflictDoUpdate({ target: accounts.account, set: { passwordEnc } })
+    .values({ provider, account: login, passwordEnc })
+    .onConflictDoUpdate({ target: [accounts.provider, accounts.account], set: { passwordEnc } })
     .returning();
-  if (isPrimaryAccount(login)) await adoptLegacy(db, row.id);
+  // dados do tempo de conta única são todos da Solplanet
+  if (provider === "solplanet" && isPrimaryAccount(login)) await adoptLegacy(db, row.id);
   return row;
 }
 

@@ -17,6 +17,20 @@ const SOLPLANET: Rota[] = [
   { m: "GET", path: "/aienergy/plant/dashboard/international", params: "-", uso: "resumo geral da conta", quem: "não usada (CLI dump-all)" },
 ];
 
+// prefixo /ctrller-manager/ salvo o login (/nbp/). Campos das respostas ainda a confirmar com uma conta real.
+const LIVOLTEK: Rota[] = [
+  { m: "POST", path: "/nbp/login/customer", params: "JSON: login_account, password=md5(senha), language, device_type=0", uso: "login; devolve access_token (vai em Authorization: Bearer)", quem: "packages/livoltek (probe)" },
+  { m: "POST", path: "/ctrller-manager/login/login", params: "-", uso: "registra a sessão logo após o login (o portal sempre chama)", quem: "packages/livoltek (probe)" },
+  { m: "POST", path: "/ctrller-manager/powerstation/findAllByCustomer?isUseChangeUnit=true", params: "JSON: start, pageSize, name", uso: "lista de usinas da conta", quem: "packages/livoltek (probe)" },
+  { m: "POST", path: "/ctrller-manager/powerstation/findOne", params: "query: id, isUseChangeUnit", uso: "detalhe da usina: coordenadas, systemType, esCount", quem: "packages/livoltek (probe)" },
+  { m: "POST", path: "/ctrller-manager/powerstation/queryPowerFlow/{id}", params: "-", uso: "fluxo de energia em tempo real", quem: "packages/livoltek (probe)" },
+  { m: "POST", path: "/ctrller-manager/powerstation/solarInfo/{id}", params: "-", uso: "geração hoje/total (dailySolar, totalSolar + unidades), CO2", quem: "packages/livoltek (probe)" },
+  { m: "POST", path: "/ctrller-manager/energystorage/findAllByStation", params: "JSON: stationId, start, pageSize, isUseChangeUnit", uso: "equipamentos da usina (inversor, bateria, medidor)", quem: "packages/livoltek (probe)" },
+  { m: "POST", path: "/ctrller-manager/energystorage/energyStorageInfo", params: "query: id, isUseChangeUnit", uso: "parâmetros em tempo real do equipamento", quem: "packages/livoltek (probe)" },
+  { m: "POST", path: "/ctrller-manager/sample/getToCSample", params: "JSON: id, startTime, endTime (yyyy-MM-dd HH:mm:ss), timeType 0=dia 1=mes 2=ano 3=total, objectType=1", uso: "histórico: curva do dia, kWh por dia/mês/ano", quem: "packages/livoltek (probe)" },
+  { m: "POST", path: "/ctrller-manager/alarm/findAllFilter", params: "JSON: powerStationFilter[id], start, pageSize, level, alarmType, sn", uso: "alarmes da usina", quem: "packages/livoltek (probe)" },
+];
+
 const EVOLUTION: Rota[] = [
   { m: "POST", path: "/message/sendText/{instance}", params: "number, text", uso: "envia mensagem no WhatsApp", quem: "worker + botão Testar" },
   { m: "GET", path: "/instance/connectionState/{instance}", params: "-", uso: "estado da conexão (open/close)", quem: "Ajustes" },
@@ -61,6 +75,11 @@ export default function FeioApi() {
         host="https://aienergy-internation.aisweicloud.com (Brasil) | headers: token, userid, x-ca-* (assinatura Alibaba)"
         rotas={SOLPLANET}
       />
+      <Tabela
+        titulo="LIVOLTEK (app My Livoltek 4.6.3 + portal web, mesmo backend) — em integração"
+        host="https://www.livoltek-portal.com (Brasil) | headers: Authorization: Bearer <access_token>, language, timeZone | sucesso: msg_code=operate.success"
+        rotas={LIVOLTEK}
+      />
       <Tabela titulo="EVOLUTION (WhatsApp)" host="EVOLUTION_URL (header apikey)" rotas={EVOLUTION} />
       <h2>== DASHBOARD (rotas deste app; nao ha /api, tudo e pagina + server action) ==</h2>
       <pre>{WEB.map(([p, d]) => `${p.padEnd(44)} ${d}`).join("\n")}</pre>
@@ -69,7 +88,11 @@ export default function FeioApi() {
         {`- A API oficial para integradores (PDF em docs/) e outra: eu-api-genergal.aisweicloud.com
   com /planlist, /getPlantOverview, /getInverterData etc. Nao e usada aqui.
 - O app Solplanet tambem tem comandos de controle remoto (/aienergy/equip/remote/*).
-  Ficaram de fora de proposito: o projeto so le dados.`}
+  Ficaram de fora de proposito: o projeto so le dados.
+- Livoltek: o app e Flutter (Dart AOT); hosts e endpoints sairam das strings do libapp.so,
+  o login do portal web (mesmo backend). Senha vai em md5; o RSA do APK e so do login de operador.
+  Comandos remotos (/hess-ota/device/operation/*) tambem ficaram de fora.
+  Outros servidores: evs.livoltek-portal.com (UE/Africa), aa.livoltek-portal.com (Asia).`}
       </pre>
     </main>
   );

@@ -1,5 +1,5 @@
 import "server-only";
-import { accountKey, alerts, dailyEnergy, getKv, getSettings, plantIdsOf, inverters, plants, powerPoints, readings } from "@sol/db";
+import { accountKey, accounts, alerts, dailyEnergy, getKv, getSettings, plantIdsOf, inverters, plants, powerPoints, readings } from "@sol/db";
 import { and, desc, eq, gte, inArray, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import { currentAccountId } from "./account";
 import { getDb } from "./db";
@@ -167,4 +167,10 @@ export async function getAccountSettings() {
 /** Valor do kv que pertence à conta logada (ex.: last_report_at). */
 export async function getAccountKv<T>(base: string) {
   return getKv<T>(getDb(), accountKey(base, await currentAccountId()));
+}
+
+/** Nome do fornecedor da conta logada, para os textos da tela ("Solplanet" | "Livoltek"). */
+export async function getProviderName() {
+  const [row] = await getDb().select({ provider: accounts.provider }).from(accounts).where(eq(accounts.id, await currentAccountId()));
+  return row?.provider === "livoltek" ? "Livoltek" : "Solplanet";
 }

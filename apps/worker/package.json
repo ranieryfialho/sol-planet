@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@sol/db": "workspace:*",
+    "@sol/livoltek": "workspace:*",
     "@sol/solplanet": "workspace:*",
     "@sol/whatsapp": "workspace:*",
     "drizzle-orm": "^0.45.4",

@@ -14,6 +14,7 @@ import {
   getLastDays,
   getMonthSum,
   getAccountSettings,
+  getProviderName,
   getTodayReadings,
   TZ,
 } from "@/lib/queries";
@@ -30,21 +31,22 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const preview = (await searchParams).simular === "1";
   const plant = await getCurrentPlant();
   if (!plant) {
-    // o worker marca no kv quando a Solplanet devolveu zero usinas para esta conta
-    const noPlants = await getAccountKv<string>("no_plants");
+    // o worker marca no kv quando o fornecedor devolveu zero usinas para esta conta
+    const [noPlants, name] = await Promise.all([getAccountKv<string>("no_plants"), getProviderName()]);
+    const app = name === "Livoltek" ? "My Livoltek" : "Solplanet";
     return (
       <Card className="mt-6">
         {noPlants ? (
           <EmptyState
             icon="solar_power"
-            title="Esta conta Solplanet não tem usinas"
-            text="O login funcionou, mas a Solplanet não devolveu nenhuma usina para este e-mail. Confira no app da Solplanet se a usina está nesta conta (ou se foi cadastrada com outro e-mail ou telefone) e, se foi compartilhada, se o convite foi aceito."
+            title={`Esta conta ${name} não tem usinas`}
+            text={`O login funcionou, mas a ${name} não devolveu nenhuma usina para esta conta. Confira no app ${app} se a usina está nesta conta (ou se foi cadastrada com outro e-mail) e, se foi o instalador ou revendedor que cadastrou, se ele já vinculou a usina ao seu e-mail.`}
           />
         ) : (
           <EmptyState
             icon="hourglass_top"
             title="Bem-vindo! Estamos buscando os seus dados"
-            text="Conectamos à sua conta Solplanet e estamos trazendo a sua usina e o histórico dela. Na primeira vez isso leva de 1 a 3 minutos. Pode deixar esta página aberta: ela atualiza sozinha e os números aparecem assim que ficarem prontos."
+            text={`Conectamos à sua conta ${name} e estamos trazendo a sua usina e o histórico dela. Na primeira vez isso leva de 1 a 3 minutos. Pode deixar esta página aberta: ela atualiza sozinha e os números aparecem assim que ficarem prontos.`}
           />
         )}
       </Card>

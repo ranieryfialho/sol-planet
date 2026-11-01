@@ -20,6 +20,9 @@ importers:
       '@sol/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@sol/livoltek':
+        specifier: workspace:*
+        version: link:../../packages/livoltek
       '@sol/solplanet':
         specifier: workspace:*
         version: link:../../packages/solplanet
@@ -72,6 +75,9 @@ importers:
       '@sol/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@sol/livoltek':
+        specifier: workspace:*
+        version: link:../../packages/livoltek
       '@sol/solplanet':
         specifier: workspace:*
         version: link:../../packages/solplanet
@@ -97,6 +103,12 @@ importers:
       drizzle-kit:
         specifier: ^0.31.11
         version: 0.31.11
+
+  packages/livoltek:
+    devDependencies:
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
 
   packages/solplanet: {}
 

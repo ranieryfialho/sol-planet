@@ -2,6 +2,8 @@
 
 > Estado em **31/10/2026** (atualizado no fim do dia). Para retomar: leia "Onde paramos", suba o ambiente local e siga a lista por prioridade.
 
+> **Livoltek** (segundo fornecedor): pendências e id da sessão em [`PENDENCIAS-LIVOLTEK.md`](PENDENCIAS-LIVOLTEK.md).
+
 ## Onde paramos
 
 **Pronto e validado com a conta real**

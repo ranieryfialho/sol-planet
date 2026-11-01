@@ -55,6 +55,11 @@ export class Collector {
     this.client = new SolplanetClient(region, locale);
   }
 
+  /** Relatórios seguem como sempre para a Solplanet (o relatório já lida com conta sem usina). */
+  get hasPlants() {
+    return true;
+  }
+
   get who(): Who {
     return { id: this.accountId, login: this.creds.account };
   }

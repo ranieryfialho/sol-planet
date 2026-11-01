@@ -62,7 +62,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               <Icon name="solar_power" className="text-[18px]" />
             </span>
             <p className="text-[13px] leading-5 text-ink-2">
-              Use a <span className="font-semibold text-ink">mesma conta do app Solplanet</span>: o e-mail ou telefone e a senha que você usa no celular.
+              Use a <span className="font-semibold text-ink">mesma conta do app do seu inversor</span> (Solplanet ou My Livoltek): o login e a senha que você usa no celular.
             </p>
           </div>
         </section>
