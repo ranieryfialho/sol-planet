@@ -84,7 +84,7 @@ export default async function ConectarIA() {
                   <Icon name="smart_toy" className="text-[18px]" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14px] font-semibold">{c.name}</span>
+                  <span className="block truncate text-[14px] font-semibold">{c.name === "Google" ? "Gemini (Google)" : c.name}</span>
                   <span className="block text-[12px] text-ink-2">Conectado {timeAgo(c.since)}</span>
                 </span>
                 <form action={disconnect}>

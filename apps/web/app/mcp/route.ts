@@ -29,6 +29,10 @@ async function handle(req: Request) {
   const accountId = await accountForAccessToken(getDb(), token);
   if (accountId === null) return unauthorized(req, "Token inválido ou vencido.");
 
+  // diagnóstico: qual chamada chegou (método e ferramenta; sem os valores dos argumentos)
+  const rpc = (await req.clone().json().catch(() => null)) as { method?: string; params?: { name?: string } } | { method?: string; params?: { name?: string } }[] | null;
+  for (const m of Array.isArray(rpc) ? rpc : rpc ? [rpc] : []) console.info("[mcp]", m.method, m.params?.name ?? "", `conta=${accountId}`);
+
   const server = createMcpServer(accountId);
   const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   await server.connect(transport);

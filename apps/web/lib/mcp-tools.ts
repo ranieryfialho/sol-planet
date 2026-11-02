@@ -39,11 +39,15 @@ export function createMcpServer(accountId: number) {
   }
 
   const server = new McpServer(
-    { name: "sol-planet", version: "0.1.0" },
+    { name: "solar", title: "Solar", description: "Geração e alertas das usinas solares do usuário", version: "0.1.0" },
     {
       instructions:
-        `Dados de geração solar das usinas do usuário (somente leitura). Energia em kWh, potência em W, datas yyyy-mm-dd no fuso ${TZ}. ` +
-        "Só existe geração (e consumo, quando há medidor); não há dados de tarifa nem de previsão do tempo. Não invente valores: se faltar dado, diga.",
+        "Solar: os dados REAIS da usina solar do usuário (geração, potência, status e alertas do inversor). " +
+        "SEMPRE use estas ferramentas, sem pedir confirmação, quando o usuário perguntar sobre geração, produção, energia gerada, kWh, " +
+        "painéis, inversor, usina, ontem/hoje/semana/mês, ou citar @solar. Nunca diga que não tem acesso aos dados da usina: consulte as ferramentas. " +
+        "Para 'ontem', calcule a data de ontem e chame resumo_dia com ela; para períodos, use geracao_por_periodo. Em caso de dúvida sobre qual usina, chame listar_usinas primeiro. " +
+        `Energia em kWh, potência em W, datas yyyy-mm-dd no fuso ${TZ}. Somente leitura. ` +
+        "Só existe geração (e consumo, quando há medidor); não há tarifa nem previsão do tempo. Não invente valores: se faltar dado, diga.",
     },
   );
 
@@ -51,7 +55,7 @@ export function createMcpServer(accountId: number) {
     "listar_usinas",
     {
       title: "Listar usinas",
-      description: "Lista as usinas solares da conta com situação atual: status, potência agora (W), geração de hoje, do mês e total (kWh), capacidade instalada (kWp).",
+      description: "Use para saber como está a usina solar do usuário agora. Lista as usinas da conta com status, potência neste momento (W), geração de hoje, do mês e total (kWh) e capacidade instalada (kWp).",
       annotations: { readOnlyHint: true },
     },
     async () => {
@@ -77,7 +81,7 @@ export function createMcpServer(accountId: number) {
     {
       title: "Resumo de um dia",
       description:
-        "Geração de um dia (kWh), pico de potência (W) e comparação com a média dos 7 dias anteriores. Sem 'data' usa hoje (parcial até o fim do dia). Bom para 'como foi ontem?' e 'por que gerei menos hoje?'.",
+        "Use para perguntas sobre UM dia, como 'como foi minha geração ontem?' ou 'quanto gerei hoje?'. Devolve a geração do dia (kWh), o pico de potência (W) e a comparação com a média dos 7 dias anteriores. Sem 'data' usa hoje (parcial até o fim do dia); para ontem, passe a data de ontem.",
       inputSchema: { usina_id: PLANT_ID, data: DATE.optional().describe("Dia a resumir; padrão: hoje") },
       annotations: { readOnlyHint: true },
     },
