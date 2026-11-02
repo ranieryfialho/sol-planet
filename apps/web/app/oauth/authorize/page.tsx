@@ -17,6 +17,7 @@ export default async function AuthorizePage({ searchParams }: { searchParams: Pr
 
   // nunca redireciona para um endereço não validado: mostra o erro aqui
   if ("error" in v || p.response_type !== "code" || p.code_challenge_method !== "S256" || !p.code_challenge) {
+    console.warn("[oauth/authorize] recusado", JSON.stringify({ motivo: "error" in v ? v.error : "pkce/response_type", client_id: p.client_id, redirect_uri: p.redirect_uri, response_type: p.response_type, method: p.code_challenge_method }).slice(0, 1000));
     return (
       <div className={shell}>
         <div className={card}>

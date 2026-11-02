@@ -16,25 +16,14 @@ const APPS = [
     ],
   },
   {
-    id: "chatgpt",
-    label: "ChatGPT",
-    steps: [
-      "Abra o ChatGPT e vá em Configurações → Aplicativos (ou Conectores).",
-      "Procure a opção de criar um app personalizado; em alguns planos ela fica no modo desenvolvedor.",
-      "Cole o endereço copiado acima e escolha autenticação OAuth.",
-      "Entre com a conta do seu inversor e toque em Permitir.",
-      "Numa conversa, selecione o app “Solar” e pergunte.",
-    ],
-  },
-  {
     id: "gemini",
-    label: "Gemini",
+    label: "Gemini (em teste)",
     steps: [
-      "Abra o Gemini e vá em Configurações → Apps conectados.",
-      "Escolha adicionar um app personalizado.",
-      "Cole o endereço copiado acima e siga as instruções na tela.",
+      "Abra o Gemini (gemini.google.com) e, no menu lateral, clique em Personalizar.",
+      "Na aba Conectores, em “Apps Conectados”, clique em “+ Personalizado”.",
+      "Dê o nome “Solar”, cole o endereço copiado acima e continue.",
       "Entre com a conta do seu inversor e toque em Permitir.",
-      "Numa conversa, use o app “Solar” e pergunte.",
+      "Numa conversa, ative o conector “Solar” e pergunte.",
     ],
   },
 ] as const;
@@ -70,7 +59,7 @@ export function AppSteps() {
   const app = APPS.find((a) => a.id === id) ?? APPS[0];
   return (
     <div>
-      <div role="tablist" aria-label="App de IA" className="mb-4 grid grid-cols-3 gap-1 rounded-full bg-surface-low p-1">
+      <div role="tablist" aria-label="App de IA" className="mb-4 grid grid-cols-2 gap-1 rounded-full bg-surface-low p-1">
         {APPS.map((a) => (
           <button
             key={a.id}

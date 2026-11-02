@@ -19,9 +19,15 @@ export async function POST(req: Request) {
     const code = form.get("code") ?? "";
     const verifier = form.get("code_verifier") ?? "";
     const row = code ? await takeAuthCode(db, code) : null; // uso único: apaga já na primeira tentativa
-    if (!row || row.clientId !== clientId || row.redirectUri !== form.get("redirect_uri")) return oauthError("invalid_grant", "Código inválido ou vencido.");
+    if (!row || row.clientId !== clientId || row.redirectUri !== form.get("redirect_uri")) {
+      console.warn("[oauth/token] código recusado", JSON.stringify({ client_id: clientId, achou_codigo: !!row, redirect_uri_enviado: form.get("redirect_uri"), redirect_uri_guardado: row?.redirectUri, campos: [...form.keys()] }));
+      return oauthError("invalid_grant", "Código inválido ou vencido.");
+    }
     const challenge = createHash("sha256").update(verifier).digest("base64url");
-    if (verifier.length < 43 || !sameSecret(challenge, row.codeChallenge)) return oauthError("invalid_grant", "code_verifier não confere.");
+    if (verifier.length < 43 || !sameSecret(challenge, row.codeChallenge)) {
+      console.warn("[oauth/token] verifier recusado", JSON.stringify({ client_id: clientId, tamanho_verifier: verifier.length }));
+      return oauthError("invalid_grant", "code_verifier não confere.");
+    }
     return json(await issueTokens(db, clientId, row.accountId));
   }
 
