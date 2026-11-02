@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   if (limited(req, "register", 10)) return oauthError("too_many_requests", "Muitas tentativas. Tente de novo em instantes.", 429);
   const body = (await req.json().catch(() => null)) as { client_name?: unknown; redirect_uris?: unknown } | null;
   const uris = body?.redirect_uris;
-  if (!Array.isArray(uris) || !uris.length || uris.length > 5 || !uris.every(validRedirect)) {
+  if (!Array.isArray(uris) || !uris.length || uris.length > 10 || !uris.every(validRedirect)) {
     // diagnóstico: mostra o que o app de IA mandou (só endereços e nomes de campos, nada secreto)
     console.warn("[oauth/register] recusado", JSON.stringify({ client_name: body?.client_name, redirect_uris: uris, campos: body ? Object.keys(body) : null, ua: req.headers.get("user-agent") }).slice(0, 1500));
     return oauthError("invalid_redirect_uri", "redirect_uris inválido.");
