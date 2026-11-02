@@ -15,17 +15,6 @@ const APPS = [
       "Numa conversa, ative o conector “Solar” e faça sua pergunta.",
     ],
   },
-  {
-    id: "gemini",
-    label: "Gemini (em teste)",
-    steps: [
-      "Abra o Gemini (gemini.google.com) e, no menu lateral, clique em Personalizar.",
-      "Na aba Conectores, em “Apps Conectados”, clique em “+ Personalizado”.",
-      "Dê o nome “Solar”, cole o endereço copiado acima e continue.",
-      "Entre com a conta do seu inversor e toque em Permitir.",
-      "Numa conversa, ative o conector “Solar” e pergunte.",
-    ],
-  },
 ] as const;
 
 async function copyText(text: string) {
@@ -59,20 +48,22 @@ export function AppSteps() {
   const app = APPS.find((a) => a.id === id) ?? APPS[0];
   return (
     <div>
-      <div role="tablist" aria-label="App de IA" className="mb-4 grid grid-cols-2 gap-1 rounded-full bg-surface-low p-1">
-        {APPS.map((a) => (
-          <button
-            key={a.id}
-            role="tab"
-            type="button"
-            aria-selected={id === a.id}
-            onClick={() => setId(a.id)}
-            className={`h-10 rounded-full text-[14px] font-semibold transition ${id === a.id ? "bg-surface text-ink shadow-pill" : "text-ink-3 hover:text-ink"}`}
-          >
-            {a.label}
-          </button>
-        ))}
-      </div>
+      {APPS.length > 1 && (
+        <div role="tablist" aria-label="App de IA" className="mb-4 grid grid-cols-2 gap-1 rounded-full bg-surface-low p-1">
+          {APPS.map((a) => (
+            <button
+              key={a.id}
+              role="tab"
+              type="button"
+              aria-selected={id === a.id}
+              onClick={() => setId(a.id)}
+              className={`h-10 rounded-full text-[14px] font-semibold transition ${id === a.id ? "bg-surface text-ink shadow-pill" : "text-ink-3 hover:text-ink"}`}
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+      )}
       <ol className="space-y-3">
         {app.steps.map((s, i) => (
           <li key={s} className="flex gap-3 text-[14px] leading-5 text-ink-2">

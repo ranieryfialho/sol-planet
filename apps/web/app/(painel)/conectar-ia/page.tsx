@@ -33,7 +33,7 @@ export default async function ConectarIA() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Conectar minha IA</h1>
         <p className="mt-1 text-[15px] text-ink-2">
-          Use o Claude (ou o Gemini, ainda em teste) para conversar sobre a sua usina. A IA lê os seus dados de geração e responde na própria conversa. O uso fica na sua conta do app de IA.
+          Use o Claude para conversar sobre a sua usina. A IA lê os seus dados de geração e responde na própria conversa. O uso fica na sua conta do app de IA.
         </p>
       </div>
 
@@ -46,7 +46,7 @@ export default async function ConectarIA() {
         {local && (
           <p className="mt-3 flex items-start gap-2 rounded-2xl bg-sun-soft px-4 py-3 text-[13px] leading-5 text-ink-2">
             <Icon name="warning" className="mt-0.5 text-[18px] text-sun" />
-            Este é um endereço local, de teste. Claude e Gemini precisam de um endereço público com HTTPS, então só funcionam depois da publicação do sistema.
+            Este é um endereço local, de teste. O Claude precisa de um endereço público com HTTPS, então só funciona depois da publicação do sistema.
           </p>
         )}
       </Card>
