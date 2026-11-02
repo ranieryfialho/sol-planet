@@ -142,6 +142,39 @@ export const alerts = pgTable(
   (t) => [index("alerts_occurred_idx").on(t.occurredAt)],
 );
 
+/** Apps de IA (Gemini, Claude…) registrados sozinhos no OAuth do MCP (registro dinâmico de cliente). */
+export const oauthClients = pgTable("oauth_clients", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  redirectUris: jsonb("redirect_uris").$type<string[]>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Códigos de autorização (uso único, 5 min). Só o hash fica no banco. */
+export const oauthCodes = pgTable("oauth_codes", {
+  codeHash: text("code_hash").primaryKey(),
+  clientId: text("client_id").notNull().references(() => oauthClients.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  redirectUri: text("redirect_uri").notNull(),
+  codeChallenge: text("code_challenge").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
+/** Tokens do MCP (access e refresh). Só o hash fica no banco; revogar = apagar a linha. */
+export const oauthTokens = pgTable(
+  "oauth_tokens",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    /** access | refresh */
+    kind: text("kind").notNull(),
+    clientId: text("client_id").notNull().references(() => oauthClients.id, { onDelete: "cascade" }),
+    accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("oauth_tokens_account_idx").on(t.accountId, t.clientId)],
+);
+
 /** Chave/valor para estado do worker (ex.: último relatório enviado). */
 export const kv = pgTable("kv", {
   key: text("key").primaryKey(),

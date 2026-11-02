@@ -9,6 +9,7 @@ export const NAV = [
   { href: "/historico", label: "Histórico", icon: "bar_chart", desktopIcon: "calendar_month" },
   { href: "/alertas", label: "Alertas", icon: "notifications_active", desktopIcon: "notifications" },
   { href: "/inversor", label: "Inversor", icon: "bolt", desktopIcon: "bolt", desktopOnly: true },
+  { href: "/conectar-ia", label: "IA", icon: "smart_toy", desktopIcon: "smart_toy" },
   { href: "/ajustes", label: "Ajustes", icon: "tune", desktopIcon: "tune" },
 ];
 

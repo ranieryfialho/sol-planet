@@ -3,6 +3,7 @@ import postgres from "postgres";
 import * as schema from "./schema";
 
 export * from "./accounts";
+export * from "./oauth";
 export * from "./schema";
 export * from "./settings";
 export { sunTimes } from "./sun";
