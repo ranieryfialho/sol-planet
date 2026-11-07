@@ -1,11 +1,5 @@
 import type { Region } from "@sol/solplanet";
 
-function req(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`variável de ambiente ${name} não definida`);
-  return v;
-}
-
 /** Só o que não é editável pelo dashboard. Regras, destinatários e horário ficam em Settings (banco). */
 export const config = {
   solplanet: {

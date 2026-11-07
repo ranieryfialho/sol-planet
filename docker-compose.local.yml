@@ -1,0 +1,66 @@
+# Ambiente local / avaliação: sobe tudo com UM comando, sem credenciais e sem Postgres externo.
+#   docker compose -f docker-compose.local.yml up --build
+# Dashboard e API em http://localhost:3000 (API: /api/usinas/999001/resumo, /api/alertas, /api/health, /api/metrics).
+#
+# Produção (VPS) continua no docker-compose.yml, que usa o Postgres já existente e a rede externa PG_NETWORK.
+#
+# `seed` aplica as migrações e simula a coleta (usina demo, 400 dias de histórico e alertas). O coletor real
+# (`worker`) precisa de login Solplanet/Livoltek e só sobe com `--profile coleta` e as credenciais no .env.
+
+x-env: &env
+  DATABASE_URL: postgres://solar:solar@postgres:5432/solar
+  # placeholder de desenvolvimento: em produção o AUTH_SECRET vem do .env da VPS (openssl rand -hex 32).
+  # Variáveis LOCAL_* de propósito: o compose lê o .env da raiz, e o ambiente local não deve herdar o de produção.
+  AUTH_SECRET: ${LOCAL_AUTH_SECRET:-dev-local-troque-em-producao}
+  TZ: America/Sao_Paulo
+  LOG_LEVEL: ${LOCAL_LOG_LEVEL:-info}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: solar
+      POSTGRES_PASSWORD: solar
+      POSTGRES_DB: solar
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pg_local:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U solar -d solar"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  seed:
+    build: { context: ., target: worker }
+    environment: *env
+    command: ["./node_modules/.bin/tsx", "src/seed-demo.ts"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  web:
+    build: { context: ., target: web }
+    environment:
+      <<: *env
+      SERVICE_NAME: web
+    ports:
+      - "127.0.0.1:${LOCAL_WEB_PORT:-3000}:3000"
+    depends_on:
+      seed: { condition: service_completed_successfully }
+
+  worker:
+    profiles: ["coleta"]
+    build: { context: ., target: worker }
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *env
+      SERVICE_NAME: worker
+    depends_on:
+      seed: { condition: service_completed_successfully }
+
+volumes:
+  pg_local:

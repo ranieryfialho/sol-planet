@@ -612,8 +612,9 @@ function OsmTiles({ coords, dark }: { coords: { lat: number; lon: number }; dark
     for (let dx = -2; dx <= 2; dx++) {
       const tx = Math.floor(x) + dx;
       const ty = Math.floor(y) + dy;
-      // eslint-disable-next-line @next/next/no-img-element
       tiles.push(
+        // tiles do OSM posicionados à mão: o next/image não ajuda aqui
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           key={`${tx}/${ty}`}
           src={`https://tile.openstreetmap.org/${TILE_Z}/${tx}/${ty}.png`}

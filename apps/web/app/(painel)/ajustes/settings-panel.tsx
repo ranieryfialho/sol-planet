@@ -113,8 +113,6 @@ export function SettingsPanel({ initial, whatsapp, lastReportAt, account }: { in
       }
     }, 3000);
     return () => clearInterval(id);
-    // flash só mexe em estado local
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qr]);
 
   // contatos chegam na hora; grupos demoram (a Evolution leva ~1 min com muitos grupos) e entram quando prontos

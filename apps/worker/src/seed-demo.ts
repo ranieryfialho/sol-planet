@@ -1,5 +1,5 @@
 /** Popula o banco com dados simulados para desenvolver o dashboard sem a API real. */
-import { alerts, createDb, dailyEnergy, inverters, plants, readings } from "@sol/db";
+import { addMember, alerts, createDb, dailyEnergy, inverters, plants, readings, upsertAccount } from "@sol/db";
 import { runMigrations } from "@sol/db/migrate";
 import { sql } from "drizzle-orm";
 
@@ -87,5 +87,9 @@ await db.insert(alerts).values([
   { plantId: id, kind: "fault", errorCode: "F17", deviceSn: "220184920-BR", message: "🚨 *Erro F17 · Tensão da rede fora da faixa*\nPico de 254 V na concessionária · durou 41 min", occurredAt: hoursAgo(76), notifiedAt: hoursAgo(76) },
 ]);
 
-console.log(`demo: ${rows.length} leituras hoje, ${days.length} dias de histórico`);
+// conta demo dona da usina: é ela que a API e o k6 usam (sessão assinada com o AUTH_SECRET)
+const demo = await upsertAccount(db, "demo@solar.local", "demo-sem-coleta");
+await addMember(db, demo.id, id);
+
+console.log(`demo: ${rows.length} leituras hoje, ${days.length} dias de histórico; conta demo id=${demo.id}, usina id=${id}`);
 process.exit(0);

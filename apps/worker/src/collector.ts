@@ -26,12 +26,6 @@ const toKwh = (v: unknown, unit?: unknown) => {
   const u = String(unit ?? "kWh").toLowerCase();
   return u.startsWith("gwh") ? n * 1e6 : u.startsWith("mwh") ? n * 1e3 : u === "wh" ? n / 1e3 : n;
 };
-/** Converte massa (kg/t) para kg. */
-const toKg = (v: unknown, unit?: unknown) => {
-  const n = num(v);
-  if (n === null) return null;
-  return /^t/i.test(String(unit ?? "kg")) ? n * 1000 : n;
-};
 const toMinutes = (hhmm: string) => {
   const [h, m] = hhmm.split(":").map(Number);
   return h * 60 + (m || 0);

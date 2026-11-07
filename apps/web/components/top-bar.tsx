@@ -15,7 +15,7 @@ function WeatherPill({ w, city }: { w: Weather; city?: string }) {
 
 /** Nome da usina + status de rede + clima (topo do Início). */
 export function TopBar({ plant, weather }: { plant: Plant; weather: Weather | null }) {
-  const detail = (plant.detail ?? {}) as Record<string, any>;
+  const detail = (plant.detail ?? {}) as { city?: string; provinceStr?: string };
   const city = [detail.city, detail.provinceStr].filter(Boolean).join(", ") || undefined;
   const online = plant.status !== 0;
   return (
