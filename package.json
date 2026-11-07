@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "test:coverage": "vitest run --coverage",
     "lint:openapi": "spectral lint docs/openapi.yaml --fail-severity=warn",
-    "demo:session": "pnpm --silent --filter @sol/worker exec tsx ../../scripts/demo-session.mts"
+    "demo:session": "pnpm --silent --filter @sol/worker exec tsx ../../scripts/demo-session.mts",
+    "test:ui": "vitest --ui"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -24,6 +25,7 @@
     "@types/supertest": "^7.2.1",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.1.0",
+    "@vitest/ui": "^5.1.0",
     "drizzle-orm": "^0.45.4",
     "eslint": "^10.14.0",
     "eslint-plugin-react-hooks": "^7.1.1",

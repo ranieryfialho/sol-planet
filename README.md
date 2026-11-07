@@ -100,6 +100,62 @@ Get-Content k6/smoke.js | docker run --rm -i --add-host=host.docker.internal:hos
 
 **Cobertura mínima declarada** (em [vitest.config.mts](vitest.config.mts), cobrada na CI): **80%** de linhas, funções e statements e **70%** de branches, medida no código de domínio e da API. Último resultado: cerca de 90% de linhas e de funções, 88% de statements e acima de 85% de branches (os números variam um pouco entre execuções).
 
+### Ver os resultados visualmente
+
+| O quê | Para que serve |
+|---|---|
+| Relatório de cobertura | Cobertura por pasta e por arquivo; ao abrir um arquivo, as linhas cobertas ficam verdes e as não cobertas vermelhas |
+| Interface do Vitest | Árvore de testes no navegador, com resultado e duração de cada um |
+| Swagger UI | Contrato da API navegável (`docs/openapi.yaml`) |
+| Dashboard do k6 | Gráficos de latência e de requisições por segundo durante o smoke test |
+
+**1. Cobertura** (gerada por `pnpm test:coverage`, em `coverage/index.html`):
+
+```bash
+start coverage/index.html     # Git Bash ou PowerShell; no macOS: open coverage/index.html
+```
+
+**2. Interface do Vitest** (precisa do Postgres do compose no ar; fica em modo observação, encerre com Ctrl+C):
+
+```bash
+# Git Bash
+export TEST_DATABASE_URL=postgres://solar:solar@localhost:5432/solar_test
+pnpm test:ui
+```
+
+```powershell
+# PowerShell
+$env:TEST_DATABASE_URL = "postgres://solar:solar@localhost:5432/solar_test"
+pnpm test:ui
+```
+
+O navegador abre sozinho. Se não abrir, use o endereço `http://localhost:51204/__vitest__/?token=...` que o terminal imprime (o token muda a cada execução).
+
+**3. Swagger UI** em http://localhost:8081. Para chamar a API pela tela (*Try it out*), grave antes o cookie `solar_session` no navegador (ver [Conta demo](#conta-demo)):
+
+```bash
+# Git Bash: sem o MSYS_NO_PATHCONV o caminho /spec vira C:/Program Files/Git/spec e o Swagger abre o exemplo "petstore"
+MSYS_NO_PATHCONV=1 docker run --rm -p 8081:8080 -e SWAGGER_JSON=/spec/openapi.yaml -v "${PWD}/docs:/spec" swaggerapi/swagger-ui
+```
+
+```powershell
+# PowerShell
+docker run --rm -p 8081:8080 -e SWAGGER_JSON=/spec/openapi.yaml -v "${PWD}/docs:/spec" swaggerapi/swagger-ui
+```
+
+**4. Dashboard do k6** em http://localhost:5665 durante os 30 s do teste (com o compose local no ar). Se a porta 5665 estiver ocupada por uma execução anterior, o `docker run` falha com "port is already allocated": veja com `docker ps` e encerre com `docker stop <nome>`.
+
+```bash
+# Git Bash
+MSYS_NO_PATHCONV=1 docker run --rm -i -p 5665:5665 -e K6_WEB_DASHBOARD=true -e K6_WEB_DASHBOARD_HOST=0.0.0.0 \
+  --add-host=host.docker.internal:host-gateway -e BASE_URL=http://host.docker.internal:3000 grafana/k6:1.3.0 run - < k6/smoke.js
+```
+
+```powershell
+# PowerShell
+Get-Content k6/smoke.js | docker run --rm -i -p 5665:5665 -e K6_WEB_DASHBOARD=true -e K6_WEB_DASHBOARD_HOST=0.0.0.0 --add-host=host.docker.internal:host-gateway -e BASE_URL=http://host.docker.internal:3000 grafana/k6:1.3.0 run -
+```
+
 ## Conformidade com a Proposta B
 
 | Módulo | Requisito | Evidência |
