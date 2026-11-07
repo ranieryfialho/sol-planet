@@ -1,53 +1,106 @@
 # Uso de IA
 
-Ferramenta: **Claude Code** (Anthropic), no VS Code, durante a adaptação do projeto à Proposta B, em 07/11/2026.
-Regra seguida: a IA propõe e executa, e **as decisões são minhas**. Nada entrou sem plano aprovado, e cada módulo virou um commit revisável na branch `projeto-final-gt4`.
+**Ferramenta:** Claude Code (Anthropic), no VS Code.
+**Quando:** adaptação do projeto à Proposta B, em 07/11/2026, na branch `projeto-final-gt4`.
+**Como trabalhei:** a IA levanta o contexto, propõe e executa; **as decisões são minhas**. Depois do primeiro passo, nenhuma alteração entrou sem plano aprovado, e cada módulo (M1 a M4) virou um commit separado para revisão.
 
-## Prompts que importaram
+> Os prompts abaixo estão **resumidos e revisados** (ortografia e clareza) a partir da conversa original. A ordem, a intenção e as decisões são as que aconteceram.
 
-### 1. Contexto e objetivo
+## Linha do tempo das interações
 
-> "leia esse link para se contextualizar... preciso adequar esse projeto a proposta B do escopo"
-> (link da aula 24, Projeto Final)
+### 1. Contextualização
 
-A IA leu o escopo, levantou o estado do repositório e listou as lacunas em relação à Proposta B.
+**Prompt:** "Leia o escopo do projeto final (aula 24) e me ajude a adequar o sol-planet à Proposta B."
 
-### 2. Freio: aprovar antes de alterar
+**Resultado:** a IA leu o escopo, analisou o repositório (estrutura, testes, compose, CI) e listou o que já atendia e o que faltava em cada módulo.
 
-> "calma! desfaça tudo o que voce fez... eu quero primeiro aprovar antes de seguir... como falei precisa estar em conformidade"
+### 2. Controle do processo: aprovar antes de alterar
 
-A IA tinha começado a criar arquivos direto. Mandei desfazer, e daí em diante o fluxo foi **plano → aprovação → execução**. Foi a principal lição sobre trabalhar com IA neste projeto: a IA acelera, mas o controle do escopo é de quem entrega.
+**Prompt:** "Pare e desfaça o que foi feito. Quero aprovar o plano antes de qualquer alteração: a entrega precisa estar em conformidade com o escopo."
 
-### 3. Decisões de escopo
+**Contexto:** a IA tinha começado a criar arquivos direto, a partir da própria análise.
+**Resultado:** tudo foi revertido, e o fluxo passou a ser **plano → aprovação → execução**. Foi a lição mais importante sobre usar IA neste projeto: ela acelera o trabalho, mas o controle do escopo é de quem entrega.
 
-> "1 - acho que é interessante exportmos tudo, tendo em vista que é um projeto que ja existe, acho que seria legal entrar de acordo e não esconder o que ja tem, obviamente que o escopo do projeto B é e sempre sera a regra para essa entrega.
-> 2 - preciso entender melhor sua proposta
-> 3 - ele pede vitest ou jest ou supertest. vamos nos ater a um desses
-> 4 - a branch sera projeto-final-gt4"
+### 3. Direção do plano
 
-### 4. Cobertura e README
+**Prompt:** "Quatro pontos: (1) quero documentar tudo o que o projeto já tem, sem esconder nada, com a Proposta B como régua da avaliação; (2) explique melhor a proposta de domínio e de fluxo principal; (3) o escopo sugere Vitest, Jest ou Supertest, então vamos usar essas ferramentas; (4) a branch será `projeto-final-gt4`."
 
-> "sobre o limite de cobertura 80%, esta de acordo com o projeto? se sim, pode acontinuar"
-> "sobre o README.md informe também que o projeto ja havia sendo desenvolvido antes e que foi adaptador para para estar de acordo e alinhado com o padrão de mercado proposto na Geração Tech 4.0"
+**Resultado:**
+- O README ganhou uma tabela de conformidade e uma seção "além do escopo B".
+- A IA detalhou o domínio (monitoramento de geração e alertas) e o fluxo ponta a ponta (coleta → Postgres → regras → API). Ela também revisou a própria sugestão anterior: `/api/health` não é domínio, então o endpoint principal passou a ser `GET /api/usinas/{id}/resumo`.
+- A proposta inicial de usar `node:test` foi descartada em favor de **Vitest + Supertest**.
 
-## O que a IA sugeriu e o que eu decidi
+### 4. Aprovação do plano
+
+**Prompt:** "Aprovado: o endpoint principal é o resumo da usina, com os testes migrados para Vitest e integração via Supertest."
+
+**Resultado:** antes de começar, a IA apresentou a lista completa de arquivos que seriam criados ou alterados em cada módulo.
+
+### 5. Cobertura e posicionamento do projeto
+
+**Prompt:** "O mínimo de 80% de cobertura é adequado para este projeto? Se for, pode seguir. No README, deixe claro que o projeto já existia e foi adaptado ao padrão de mercado proposto na Geração Tech 4.0."
+
+**Resultado:** a IA explicou que o escopo exige um mínimo declarado e cumprido, sem fixar valor, e que 80% é um patamar usual e viável medindo domínio e API. O mínimo ficou declarado no `vitest.config.mts`, e o README abre com o contexto do projeto.
+
+### 6. Segredos: achados do gitleaks
+
+**Pergunta da IA:** o gitleaks apontou 6 ocorrências em `packages/solplanet/src/index.ts`. Tratar com allowlist justificada, mover para variáveis de ambiente ou varrer só o código atual?
+
+**Minha decisão:** **allowlist justificada.** Os valores são a `appKey` e o `appSecret` públicos do APK da Solplanet, iguais em qualquer instalação do app, e não credenciais do projeto. Mover para o `.env` não limparia o histórico do git e ainda exigiria mudar o `.env` da VPS antes do próximo deploy. A justificativa está no README (seção Segredos) e no `.gitleaksignore`.
+
+### 7. Revisão da documentação
+
+**Prompt:** "O `docs/ia.md` ficou fraco. Reorganize com os prompts resumidos e inclua todas as interações relevantes."
+
+**Resultado:** esta versão do documento.
+
+### 8. Aprofundamento técnico
+
+**Prompt:** "Liste perguntas técnicas que um avaliador faria sobre as decisões desta entrega e responda cada uma com base no código."
+
+**Contexto:** a IA sugeriu as perguntas abaixo, eu aprovei a lista e pedi as respostas. Elas foram conferidas no código do repositório.
+
+**8.1. Por que um núcleo de domínio puro, e não uma arquitetura hexagonal? Quais são os riscos?**
+A hexagonal entrega a mesma testabilidade com muito mais estrutura: interfaces, adaptadores e injeção para cada dependência. Para um sistema deste tamanho e um prazo de 8 dias, funções puras em `domain.ts` e `summary.ts`, com o `db` passado por parâmetro, resolvem o problema real, que era testar as regras sem banco. O risco é a disciplina: nada impede que alguém volte a colocar SQL dentro de uma regra. A mitigação é a convenção registrada no [ADR 0001](adr/0001-nucleo-de-dominio-puro.md) e a cobertura cobrada na CI.
+
+**8.2. Por que a usina de outra conta responde 404 e não 403?**
+O 403 confirma que o id existe, e ids de usina são números inteiros (os `stationid` do fornecedor), fáceis de testar em sequência. Com 403, um usuário logado poderia enumerar quais usinas existem no sistema. Com 404, quem não tem acesso não consegue diferenciar "não existe" de "não é seu". É a mesma prática do GitHub com repositórios privados. O teste de integração cobre esse caso.
+
+**8.3. O SLO de 300 ms faz sentido se o p95 medido foi de 24 ms?**
+Sim, por dois motivos. Primeiro, o teste rodou numa máquina de 16 CPUs com o banco local e exclusivo, enquanto a produção é uma VPS com o Postgres compartilhado com outros serviços. Segundo, um SLO é uma promessa ao usuário, e 300 ms é o limite em que o dashboard e o app de IA ainda parecem instantâneos. Apertar para 50 ms faria o alerta disparar por variação de infraestrutura, não por problema real. O certo é medir na VPS e só então recalibrar (próximo passo em [desempenho.md](desempenho.md)).
+
+**8.4. Qual é o gargalo do resumo e como reduzir as idas ao banco?**
+O banco executa cada consulta em décimos de milissegundo (`EXPLAIN ANALYZE`: 0,072 ms). O custo está nas **3 rodadas sequenciais**: `canSeePlant` → leitura de `plants` → três consultas em paralelo. Juntar as duas primeiras num `join` de `plants` com `account_plants` elimina uma rodada inteira, cerca de um terço da latência no servidor. *Decisão: registrado como próximo passo e não implementado nesta entrega, porque o SLO já está atendido com folga.*
+
+**8.5. O teste de integração apaga dados. Como garantir que nunca rode contra produção?**
+Há três travas: (1) ele só lê `TEST_DATABASE_URL`, nunca o `DATABASE_URL` da aplicação; (2) ele **recusa** qualquer banco cujo nome não termine em `_test` e lança erro antes de tocar em qualquer dado; (3) sem a variável, o teste é pulado (`describe.skipIf`). Na CI, o banco é um container descartável (`solar_test`) criado só para o job.
+
+**8.6. Usar o cookie do dashboard para autenticar a API é adequado? Quais são as alternativas?**
+Para o uso atual (o próprio dashboard e testes), é adequado. O cookie é `httpOnly` (o JavaScript da página não o lê), `sameSite=lax` (não vai em requisições de outros sites, o que protege contra CSRF), `secure` quando a conexão é HTTPS e assinado com HMAC-SHA256, com validade de 30 dias. A API só tem rotas GET, que não alteram nada. Para clientes externos (outro sistema, um app mobile), o melhor seria **token Bearer**: o projeto já emite tokens OAuth 2.1 com PKCE para o MCP, e estender esse mecanismo para a API REST seria o caminho natural. API key fixa foi descartada (não expira e vaza fácil), e JWT próprio não traz vantagem sobre o OAuth que já existe. *Decisão: manter o cookie nesta entrega e registrar o Bearer como evolução.*
+
+**8.7. O que falta para esta entrega se aproximar do nível A?**
+Pelo escopo A, faltaria: monólito modular com fronteiras explícitas e volume de 100 mil registros sintéticos; testes de contrato (Pact) e Testcontainers; dois ambientes com GitHub Environments; métricas RED completas com Prometheus e Grafana, um trace com OpenTelemetry e Jaeger; feature flag; diagramas C4; plano de cache e de filas idempotentes; k6 em 3 estágios com relatório antes e depois. Parte da base já existe (deploy contínuo, OAuth, histograma por rota), mas a diferença de escopo é grande. Por isso escolhi o nível B: como diz o próprio escopo, um B bem feito vale mais que um A pela metade.
+
+## Sugestões da IA × decisões
 
 | Tema | Sugestão da IA | Decisão |
 |---|---|---|
-| Endpoint principal | No primeiro rascunho, `/api/health`. A própria IA depois apontou que health não é domínio. | ✅ `GET /api/usinas/{id}/resumo`, com `GET /api/alertas` de apoio |
-| O que documentar | Só o escopo B | ❌ Mudei: **documentar tudo** o que já existe e marcar o que é extra |
-| Ferramentas de teste | `node:test` nativo, para não mexer na stack | ❌ Recusei: seguir o escopo à risca, com **Vitest + Supertest** |
-| Cobertura mínima | 80% de linhas | ✅ Aceito depois de confirmar que é o padrão de mercado e viável no projeto |
-| Compose de um comando | Profile no compose de produção | A IA mudou para um arquivo separado (`docker-compose.local.yml`) ao ver o risco de quebrar o deploy da VPS |
-| Achados do gitleaks | Allowlist justificada, mover para variáveis de ambiente ou varrer só o código atual | ✅ **Allowlist justificada**: são chaves públicas do APK, não credenciais |
-| Padrão do M1 | Núcleo de domínio puro com E/S na borda | ✅ Registrado no [ADR 0001](adr/0001-nucleo-de-dominio-puro.md), com a hexagonal completa descartada |
+| Endpoint principal | `/api/health` no primeiro rascunho | ❌ Trocado por `GET /api/usinas/{id}/resumo` (domínio real) |
+| O que documentar | Só o escopo B | ❌ **Documentar tudo** e marcar o que é extra |
+| Ferramentas de teste | `node:test` nativo | ❌ **Vitest + Supertest**, como o escopo sugere |
+| Cobertura mínima | 80% de linhas | ✅ Aceito depois de confirmar a viabilidade |
+| Compose de um comando | Profile no compose de produção | 🔄 Arquivo separado (`docker-compose.local.yml`), para não arriscar o deploy da VPS |
+| Gitleaks | Três alternativas | ✅ Allowlist justificada |
+| Padrão do M1 | Núcleo de domínio puro com E/S na borda | ✅ [ADR 0001](adr/0001-nucleo-de-dominio-puro.md), com a hexagonal completa descartada |
+| Rodadas ao banco no resumo | Juntar `canSeePlant` e `plants` num `join` | ⏸️ Próximo passo: o SLO já está atendido com folga |
+| Autenticação da API | Bearer via OAuth já existente, para clientes externos | ⏸️ Mantido o cookie nesta entrega, com o Bearer registrado como evolução |
 
-## Problemas que a IA encontrou e corrigiu no caminho
+## Problemas encontrados no caminho
 
 - **typescript-eslint não suporta o TypeScript 7** do projeto. A solução foi seguir a orientação oficial da Microsoft: TS 6 lado a lado (`typescript` → `@typescript/typescript6`, `@typescript/native` → TS 7).
-- **O compose local herdava o `.env` de produção** (o Docker Compose interpola o `.env` da raiz), e a sessão local era recusada. A correção foram variáveis `LOCAL_*` próprias.
-- **A reversão inicial ficou incompleta**: uma instalação interrompida terminou depois e alterou `package.json` e `pnpm-lock.yaml`. A IA detectou, avisou e restaurou os arquivos.
+- **O compose local herdava o `.env` de produção** (o Docker Compose interpola o `.env` da raiz), e a sessão era recusada. A correção foram variáveis `LOCAL_*` próprias.
+- **A reversão do passo 2 ficou incompleta**: uma instalação interrompida terminou depois e alterou `package.json` e `pnpm-lock.yaml`. A IA detectou, avisou e restaurou os arquivos.
 
 ## O que é meu e consigo explicar
 
-O sistema antes da adaptação (coleta por engenharia reversa, regras, dashboard, WhatsApp, MCP) e cada decisão da tabela acima. O código gerado na adaptação foi revisado módulo a módulo, e a explicação de cada parte está no [ADR](adr/0001-nucleo-de-dominio-puro.md), no [desempenho.md](desempenho.md) e nos comentários do código.
+O sistema anterior à adaptação (coleta por engenharia reversa, regras de alerta, dashboard, WhatsApp, MCP/OAuth, deploy) e cada decisão da tabela acima. O código da adaptação foi revisado módulo a módulo. As justificativas técnicas estão no [ADR](adr/0001-nucleo-de-dominio-puro.md), no [desempenho.md](desempenho.md) e nos comentários do código.
