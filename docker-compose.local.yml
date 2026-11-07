@@ -26,6 +26,8 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - pg_local:/var/lib/postgresql/data
+      # cria também o solar_test (testes de integração) na primeira subida
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U solar -d solar"]
       interval: 2s

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { beforeEach, test } from "node:test";
+import { beforeEach, test } from "vitest";
 import { createSession, readSession } from "../apps/web/lib/session";
 
 beforeEach(() => {
