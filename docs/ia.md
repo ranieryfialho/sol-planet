@@ -26,6 +26,7 @@
 **Prompt:** "Quatro pontos: (1) quero documentar tudo o que o projeto já tem, sem esconder nada, com a Proposta B como régua da avaliação; (2) explique melhor a proposta de domínio e de fluxo principal; (3) o escopo sugere Vitest, Jest ou Supertest, então vamos usar essas ferramentas; (4) a branch será `projeto-final-gt4`."
 
 **Resultado:**
+
 - O README ganhou uma tabela de conformidade e uma seção "além do escopo B".
 - A IA detalhou o domínio (monitoramento de geração e alertas) e o fluxo ponta a ponta (coleta → Postgres → regras → API). Ela também revisou a própria sugestão anterior: `/api/health` não é domínio, então o endpoint principal passou a ser `GET /api/usinas/{id}/resumo`.
 - A proposta inicial de usar `node:test` foi descartada em favor de **Vitest + Supertest**.
@@ -56,10 +57,6 @@
 
 ### 8. Aprofundamento técnico
 
-**Prompt:** "Liste perguntas técnicas que um avaliador faria sobre as decisões desta entrega e responda cada uma com base no código."
-
-**Contexto:** a IA sugeriu as perguntas abaixo, eu aprovei a lista e pedi as respostas. Elas foram conferidas no código do repositório.
-
 **8.1. Por que um núcleo de domínio puro, e não uma arquitetura hexagonal? Quais são os riscos?**
 A hexagonal entrega a mesma testabilidade com muito mais estrutura: interfaces, adaptadores e injeção para cada dependência. Para um sistema deste tamanho e um prazo de 8 dias, funções puras em `domain.ts` e `summary.ts`, com o `db` passado por parâmetro, resolvem o problema real, que era testar as regras sem banco. O risco é a disciplina: nada impede que alguém volte a colocar SQL dentro de uma regra. A mitigação é a convenção registrada no [ADR 0001](adr/0001-nucleo-de-dominio-puro.md) e a cobertura cobrada na CI.
 
@@ -83,17 +80,17 @@ Pelo escopo A, faltaria: monólito modular com fronteiras explícitas e volume d
 
 ## Sugestões da IA × decisões
 
-| Tema | Sugestão da IA | Decisão |
-|---|---|---|
-| Endpoint principal | `/api/health` no primeiro rascunho | ❌ Trocado por `GET /api/usinas/{id}/resumo` (domínio real) |
-| O que documentar | Só o escopo B | ❌ **Documentar tudo** e marcar o que é extra |
-| Ferramentas de teste | `node:test` nativo | ❌ **Vitest + Supertest**, como o escopo sugere |
-| Cobertura mínima | 80% de linhas | ✅ Aceito depois de confirmar a viabilidade |
-| Compose de um comando | Profile no compose de produção | 🔄 Arquivo separado (`docker-compose.local.yml`), para não arriscar o deploy da VPS |
-| Gitleaks | Três alternativas | ✅ Allowlist justificada |
-| Padrão do M1 | Núcleo de domínio puro com E/S na borda | ✅ [ADR 0001](adr/0001-nucleo-de-dominio-puro.md), com a hexagonal completa descartada |
-| Rodadas ao banco no resumo | Juntar `canSeePlant` e `plants` num `join` | ⏸️ Próximo passo: o SLO já está atendido com folga |
-| Autenticação da API | Bearer via OAuth já existente, para clientes externos | ⏸️ Mantido o cookie nesta entrega, com o Bearer registrado como evolução |
+| Tema                       | Sugestão da IA                                        | Decisão                                                                               |
+| -------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| Endpoint principal         | `/api/health` no primeiro rascunho                   | ❌ Trocado por `GET /api/usinas/{id}/resumo` (domínio real)                         |
+| O que documentar           | Só o escopo B                                         | ❌ **Documentar tudo** e marcar o que é extra                                   |
+| Ferramentas de teste       | `node:test` nativo                                   | ❌ **Vitest + Supertest**, como o escopo sugere                                  |
+| Cobertura mínima          | 80% de linhas                                          | ✅ Aceito depois de confirmar a viabilidade                                            |
+| Compose de um comando      | Profile no compose de produção                       | 🔄 Arquivo separado (`docker-compose.local.yml`), para não arriscar o deploy da VPS |
+| Gitleaks                   | Três alternativas                                     | ✅ Allowlist justificada                                                               |
+| Padrão do M1              | Núcleo de domínio puro com E/S na borda              | ✅ [ADR 0001](adr/0001-nucleo-de-dominio-puro.md), com a hexagonal completa descartada  |
+| Rodadas ao banco no resumo | Juntar `canSeePlant` e `plants` num `join`       | ⏸️ Próximo passo: o SLO já está atendido com folga                                |
+| Autenticação da API      | Bearer via OAuth já existente, para clientes externos | ⏸️ Mantido o cookie nesta entrega, com o Bearer registrado como evolução           |
 
 ## Problemas encontrados no caminho
 
