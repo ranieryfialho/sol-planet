@@ -37,7 +37,27 @@ curl -b "solar_session=<cookie>" "http://localhost:3000/api/alertas?tipo=offline
 
 O contrato completo está em [docs/openapi.yaml](docs/openapi.yaml). Para visualizar, abra o arquivo no [Swagger Editor](https://editor.swagger.io).
 
-O dashboard (`/`) pede login com uma conta Solplanet real. Os dados da demo aparecem pela API.
+### Conta demo
+
+O seed cria uma conta e uma usina simuladas (ver [apps/worker/src/seed-demo.ts](apps/worker/src/seed-demo.ts)):
+
+| Item | Valor |
+|---|---|
+| Login | `demo@solar.local` |
+| Senha | `demo-sem-coleta` |
+| Id da conta | `1` |
+| Id da usina | `999001` ("Minha Casa", 5,5 kWp) |
+| `AUTH_SECRET` do compose local | `dev-local-troque-em-producao` (só desenvolvimento) |
+
+**A senha não entra na tela de login.** O login do dashboard confere as credenciais na API real da Solplanet ou da Livoltek, e a conta demo não existe lá; a senha só preenche o campo obrigatório da tabela de contas. A conta demo é usada de duas formas:
+
+1. **Pela API**: com o cookie gerado por `pnpm demo:session`, como nos `curl` acima. O teste de carga (`k6/smoke.js`) faz o mesmo.
+2. **No dashboard, pelo navegador**: o proxy só confere a assinatura do cookie, então basta gravá-lo à mão:
+   1. Rode `pnpm demo:session` e copie o valor impresso.
+   2. Abra http://localhost:3000, aperte F12 e vá em Application (Chrome) ou Storage (Firefox), depois Cookies.
+   3. Crie o cookie `solar_session` com esse valor (path `/`) e recarregue a página. O dashboard abre com a usina demo.
+
+O cookie vale 30 dias e só funciona com o `AUTH_SECRET` do ambiente que o gerou. Em produção o `AUTH_SECRET` vem do `.env` da VPS, e a conta demo não existe lá.
 
 ## Como testar
 
