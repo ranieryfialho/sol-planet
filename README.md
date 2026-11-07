@@ -29,10 +29,19 @@ curl http://localhost:3000/api/metrics    # formato Prometheus
 Os endpoints de domínio exigem a sessão do dashboard (cookie `solar_session`). Para gerar a sessão da conta demo:
 
 ```bash
+# Git Bash / Linux / macOS
 pnpm install
-pnpm demo:session     # imprime o cookie da conta demo (AUTH_SECRET do compose local)
-curl -b "solar_session=<cookie>" http://localhost:3000/api/usinas/999001/resumo
-curl -b "solar_session=<cookie>" "http://localhost:3000/api/alertas?tipo=offline&limite=5"
+T=$(pnpm --silent demo:session)     # cookie da conta demo (AUTH_SECRET do compose local)
+curl -b "solar_session=$T" http://localhost:3000/api/usinas/999001/resumo
+curl -b "solar_session=$T" "http://localhost:3000/api/alertas?tipo=offline&limite=5"
+```
+
+```powershell
+# PowerShell (Windows): use curl.exe; "curl" sozinho é apelido do Invoke-WebRequest
+pnpm install
+$T = pnpm --silent demo:session
+curl.exe -b "solar_session=$T" http://localhost:3000/api/usinas/999001/resumo
+curl.exe -b "solar_session=$T" "http://localhost:3000/api/alertas?tipo=offline&limite=5"
 ```
 
 O contrato completo está em [docs/openapi.yaml](docs/openapi.yaml). Para visualizar, abra o arquivo no [Swagger Editor](https://editor.swagger.io).
@@ -70,14 +79,26 @@ pnpm test             # unitários (a integração é pulada sem banco)
 
 # integração + cobertura mínima (usa o Postgres do compose local, banco solar_test)
 docker compose -f docker-compose.local.yml up -d postgres
-TEST_DATABASE_URL=postgres://solar:solar@localhost:5432/solar_test pnpm test:coverage
+TEST_DATABASE_URL=postgres://solar:solar@localhost:5432/solar_test pnpm test:coverage   # Git Bash
 
-# smoke test k6 (com o compose local no ar)
+# smoke test k6 (com o compose local no ar; a 1ª execução baixa a imagem)
 docker run --rm -i --add-host=host.docker.internal:host-gateway \
-  -e BASE_URL=http://host.docker.internal:3000 grafana/k6:1.3.0 run - < k6/smoke.js
+  -e BASE_URL=http://host.docker.internal:3000 grafana/k6:1.3.0 run - < k6/smoke.js     # Git Bash
 ```
 
-**Cobertura mínima declarada** (em [vitest.config.mts](vitest.config.mts), cobrada na CI): **80%** de linhas, funções e statements e **70%** de branches, medida no código de domínio e da API. Último resultado: 90,8% de linhas, 90,6% de funções, 88,2% de statements e 85,5% de branches.
+No **PowerShell**, a variável de ambiente e o redirecionamento de arquivo têm outra sintaxe:
+
+```powershell
+# integração + cobertura (a variável vale só para esta janela do terminal)
+$env:TEST_DATABASE_URL = "postgres://solar:solar@localhost:5432/solar_test"
+pnpm test:coverage
+Remove-Item Env:TEST_DATABASE_URL     # volta ao modo sem banco
+
+# smoke test k6
+Get-Content k6/smoke.js | docker run --rm -i --add-host=host.docker.internal:host-gateway -e BASE_URL=http://host.docker.internal:3000 grafana/k6:1.3.0 run -
+```
+
+**Cobertura mínima declarada** (em [vitest.config.mts](vitest.config.mts), cobrada na CI): **80%** de linhas, funções e statements e **70%** de branches, medida no código de domínio e da API. Último resultado: cerca de 90% de linhas e de funções, 88% de statements e acima de 85% de branches (os números variam um pouco entre execuções).
 
 ## Conformidade com a Proposta B
 
