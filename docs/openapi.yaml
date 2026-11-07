@@ -1,0 +1,392 @@
+openapi: 3.1.0
+info:
+  title: Sol Planet — API de monitoramento solar
+  version: 1.0.0
+  summary: Geração, status e alertas de usinas solares residenciais.
+  description: |
+    API do projeto final (Geração Tech 4.0 · Full Cycle · **Nível B**).
+
+    **Fluxo principal:** coleta da usina → leituras no Postgres → regras de alerta → `GET /api/usinas/{id}/resumo`.
+
+    Todas as rotas HTTP do sistema estão documentadas aqui. As marcadas com a tag
+    **Escopo B** são as avaliadas na entrega; as demais (mapa, WhatsApp, MCP/OAuth) já existiam
+    antes da adaptação e aparecem para não esconder nada do sistema real.
+
+    Autenticação da API REST: o mesmo cookie de sessão do dashboard (`solar_session`, assinado com HMAC).
+    Erros da API REST seguem o formato `{ "erro": "mensagem" }`.
+  contact:
+    name: Raniery Fialho
+    url: https://github.com/ranieryfialho/sol-planet
+  license:
+    name: Uso acadêmico
+    identifier: UNLICENSED
+servers:
+  - url: http://localhost:3000
+    description: Ambiente local (docker-compose.local.yml)
+tags:
+  - name: Escopo B
+    description: Endpoints avaliados no projeto final (fluxo principal e observabilidade).
+  - name: Dashboard
+    description: Rotas auxiliares do dashboard web (já existiam antes da adaptação).
+  - name: MCP e OAuth
+    description: Servidor MCP para apps de IA (Claude) com OAuth 2.1 + PKCE (já existia antes da adaptação).
+
+paths:
+  /api/usinas/{id}/resumo:
+    get:
+      operationId: getResumoUsina
+      tags: [Escopo B]
+      summary: Resumo do dia de uma usina (endpoint principal)
+      description: |
+        Geração de hoje, pico, economia em R$, produtividade (kWh/kWp) e comparação com a média dos 7 dias anteriores.
+        Usina de outra conta responde 404 (não revela que o id existe). Este é o endpoint do smoke test k6 e do SLO.
+      security:
+        - sessao: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Id da usina (stationid do fornecedor).
+          schema: { type: integer, minimum: 1, examples: [999001] }
+      responses:
+        "200":
+          description: Resumo calculado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Resumo" }
+              examples:
+                demo:
+                  value:
+                    usina: { id: 999001, nome: Minha Casa, capacidadeKwp: 5.5 }
+                    status: { codigo: 1, rotulo: Operando normalmente }
+                    agora: { potenciaW: 3211, atualizadoEm: "2026-11-07T15:00:00.000Z" }
+                    hoje: { energiaKwh: 22, picoW: 4300, economiaReais: 20.9, produtividadeKwhKwp: 4, variacaoMedia7dPct: 10 }
+                    media7dKwh: 20
+                    totalKwh: 8421.46
+        "400": { $ref: "#/components/responses/Invalido" }
+        "401": { $ref: "#/components/responses/NaoAutenticado" }
+        "404": { $ref: "#/components/responses/NaoEncontrado" }
+
+  /api/alertas:
+    get:
+      operationId: listAlertas
+      tags: [Escopo B]
+      summary: Alertas da conta
+      description: Alertas disparados pelas regras da conta logada, do mais recente ao mais antigo.
+      security:
+        - sessao: []
+      parameters:
+        - name: tipo
+          in: query
+          required: false
+          description: Filtra por tipo de alerta.
+          schema: { $ref: "#/components/schemas/TipoAlerta" }
+        - name: limite
+          in: query
+          required: false
+          description: Quantidade máxima de alertas.
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        "200":
+          description: Lista de alertas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Alerta" }
+        "400": { $ref: "#/components/responses/Invalido" }
+        "401": { $ref: "#/components/responses/NaoAutenticado" }
+
+  /api/health:
+    get:
+      operationId: getHealth
+      tags: [Escopo B]
+      summary: Saúde do serviço
+      description: Confirma que a aplicação responde e que o banco aceita consultas. Público (sem dados de usina).
+      security: []
+      responses:
+        "200":
+          description: Serviço e banco ok.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, banco]
+                properties:
+                  status: { type: string, const: ok }
+                  banco: { type: string, const: ok }
+                  latenciaBancoMs: { type: integer }
+                  uptimeS: { type: integer }
+        "503":
+          description: Banco indisponível.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: degradado }
+                  banco: { type: string, const: indisponível }
+
+  /api/metrics:
+    get:
+      operationId: getMetrics
+      tags: [Escopo B]
+      summary: Métricas para o Prometheus
+      description: Histograma `http_request_duration_seconds` (rota, status) e métricas do processo Node. Base do SLO.
+      security: []
+      responses:
+        "200":
+          description: Formato texto do Prometheus.
+          content:
+            text/plain:
+              schema: { type: string }
+
+  /api/mapa:
+    get:
+      operationId: getMapa
+      tags: [Dashboard]
+      summary: Imagem de mapa para o fundo da cena da casa
+      description: Proxy da Google Maps Static API (a chave fica no servidor). 404 se a chave não estiver configurada.
+      security:
+        - sessao: []
+      parameters:
+        - { name: lat, in: query, required: true, description: Latitude., schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: lon, in: query, required: true, description: Longitude., schema: { type: number, minimum: -180, maximum: 180 } }
+        - { name: tema, in: query, required: false, description: Tema do mapa., schema: { type: string, enum: [light, dark] } }
+      responses:
+        "200":
+          description: Imagem do mapa.
+          content:
+            image/png:
+              schema: { type: string, contentMediaType: image/png }
+        "400": { description: Coordenadas inválidas. }
+        "401": { description: Não autenticado. }
+        "404": { description: Mapa desativado (sem GOOGLE_MAPS_API_KEY). }
+        "502": { description: Falha no provedor do mapa. }
+
+  /api/whatsapp/groups:
+    get:
+      operationId: listGruposWhatsapp
+      tags: [Dashboard]
+      summary: Grupos do WhatsApp da conta
+      description: Usado em Ajustes para escolher destinatários dos alertas. Cache de 5 min.
+      security:
+        - sessao: []
+      parameters:
+        - { name: force, in: query, required: false, description: "1 ignora o cache.", schema: { type: string, enum: ["1"] } }
+      responses:
+        "200":
+          description: Grupos (lista vazia se o WhatsApp não estiver conectado).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string, examples: ["120363000000000000@g.us"] }
+                    subject: { type: string }
+        "401":
+          description: Não autenticado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+
+  /mcp:
+    post:
+      operationId: mcp
+      tags: [MCP e OAuth]
+      summary: Servidor MCP (Model Context Protocol)
+      description: JSON-RPC do MCP (transporte Streamable HTTP) para apps de IA consultarem a usina. GET e DELETE também são aceitos pelo transporte.
+      security:
+        - bearerMcp: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, description: Mensagem JSON-RPC 2.0 do MCP. }
+      responses:
+        "200":
+          description: Resposta JSON-RPC (ou stream SSE).
+          content:
+            application/json:
+              schema: { type: object }
+        "401": { description: Token ausente ou inválido (cabeçalho WWW-Authenticate aponta o OAuth). }
+        "429": { description: Muitas requisições. }
+
+  /oauth/register:
+    post:
+      operationId: oauthRegister
+      tags: [MCP e OAuth]
+      summary: Registro dinâmico de cliente OAuth (RFC 7591)
+      description: O app de IA se cadastra sozinho como cliente público; a segurança vem do PKCE e do login do usuário.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [redirect_uris]
+              properties:
+                client_name: { type: string, maxLength: 80 }
+                redirect_uris: { type: array, minItems: 1, maxItems: 10, items: { type: string, format: uri } }
+      responses:
+        "201":
+          description: Cliente registrado.
+          content:
+            application/json:
+              schema: { type: object }
+        "400": { description: redirect_uris inválido. }
+        "429": { description: Muitas tentativas. }
+
+  /oauth/token:
+    post:
+      operationId: oauthToken
+      tags: [MCP e OAuth]
+      summary: Emissão de tokens (RFC 6749, PKCE S256)
+      description: Troca código de autorização (com code_verifier) ou refresh token por tokens de acesso ao /mcp.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [grant_type, client_id]
+              properties:
+                grant_type: { type: string, enum: [authorization_code, refresh_token] }
+                client_id: { type: string }
+                code: { type: string }
+                code_verifier: { type: string, minLength: 43 }
+                redirect_uri: { type: string }
+                refresh_token: { type: string }
+      responses:
+        "200":
+          description: Tokens emitidos.
+          content:
+            application/json:
+              schema: { type: object }
+        "400": { description: "Código, verifier ou refresh token inválido." }
+        "401": { description: client_id desconhecido. }
+        "429": { description: Muitas tentativas. }
+
+  /.well-known/oauth-authorization-server:
+    get:
+      operationId: oauthMetadata
+      tags: [MCP e OAuth]
+      summary: Metadados do servidor de autorização (RFC 8414)
+      description: Endereços de registro, autorização e token.
+      security: []
+      responses:
+        "200":
+          description: Metadados.
+          content:
+            application/json:
+              schema: { type: object }
+
+  /.well-known/oauth-protected-resource:
+    get:
+      operationId: oauthProtectedResource
+      tags: [MCP e OAuth]
+      summary: Metadados do recurso protegido (RFC 9728)
+      description: Informa ao cliente de IA qual servidor de autorização protege o /mcp.
+      security: []
+      responses:
+        "200":
+          description: Metadados.
+          content:
+            application/json:
+              schema: { type: object }
+
+components:
+  securitySchemes:
+    sessao:
+      type: apiKey
+      in: cookie
+      name: solar_session
+      description: Cookie de sessão do dashboard (HMAC-SHA256, validade de 30 dias).
+    bearerMcp:
+      type: http
+      scheme: bearer
+      description: Access token emitido pelo /oauth/token.
+
+  responses:
+    Invalido:
+      description: Parâmetro inválido.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erro" }
+    NaoAutenticado:
+      description: Sem sessão válida.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erro" }
+          example: { erro: não autenticado }
+    NaoEncontrado:
+      description: Usina inexistente ou de outra conta.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erro" }
+          example: { erro: usina não encontrada }
+
+  schemas:
+    Erro:
+      type: object
+      required: [erro]
+      properties:
+        erro: { type: string }
+
+    Resumo:
+      type: object
+      required: [usina, status, agora, hoje, media7dKwh, totalKwh]
+      properties:
+        usina:
+          type: object
+          required: [id, nome, capacidadeKwp]
+          properties:
+            id: { type: integer }
+            nome: { type: string }
+            capacidadeKwp: { type: [number, "null"] }
+        status:
+          type: object
+          required: [codigo, rotulo]
+          properties:
+            codigo: { type: integer, description: "0 offline, 1 normal, 2 alerta, 3 erro" }
+            rotulo: { type: string }
+        agora:
+          type: object
+          required: [potenciaW, atualizadoEm]
+          properties:
+            potenciaW: { type: integer }
+            atualizadoEm: { type: string, format: date-time }
+        hoje:
+          type: object
+          required: [energiaKwh, picoW, economiaReais, produtividadeKwhKwp, variacaoMedia7dPct]
+          properties:
+            energiaKwh: { type: number }
+            picoW: { type: integer }
+            economiaReais: { type: number, description: energiaKwh × tarifa (R$/kWh) configurada em Ajustes }
+            produtividadeKwhKwp: { type: [number, "null"], description: null se a capacidade não estiver cadastrada }
+            variacaoMedia7dPct: { type: [number, "null"], description: "% acima (+) ou abaixo (−) da média; null sem histórico" }
+        media7dKwh: { type: [number, "null"] }
+        totalKwh: { type: number }
+
+    TipoAlerta:
+      type: string
+      enum: [offline, warning, error, fault, low_generation, low_capacity, zero_generation, string_imbalance, grid_voltage, grid_import, monthly, stale_data, milestone, recovered]
+
+    Alerta:
+      type: object
+      required: [id, usinaId, tipo, mensagem, ocorridoEm]
+      properties:
+        id: { type: integer }
+        usinaId: { type: [integer, "null"] }
+        tipo: { $ref: "#/components/schemas/TipoAlerta" }
+        mensagem: { type: string }
+        codigoErro: { type: [string, "null"] }
+        ocorridoEm: { type: string, format: date-time }
+        notificadoEm: { type: [string, "null"], format: date-time }

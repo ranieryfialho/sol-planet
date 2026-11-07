@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   qualidade:
-    name: install, lint, typecheck e testes
+    name: install, lint, typecheck, OpenAPI e testes
     runs-on: ubuntu-latest
     services:
       # banco só dos testes de integração (nome *_test: o teste apaga os dados)
@@ -50,6 +50,9 @@ jobs:
 
       - name: Typecheck
         run: pnpm typecheck
+
+      - name: Lint do contrato OpenAPI (Spectral)
+        run: pnpm lint:openapi
 
       - name: Testes (unitários + integração) com cobertura mínima
         run: pnpm test:coverage
