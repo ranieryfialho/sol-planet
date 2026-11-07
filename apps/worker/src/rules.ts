@@ -3,6 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { config, zonedMidnight } from "./config";
 import { connectedStrings, dropPercent, fmtW, hasStringImbalance, isAfterSun, isGridVoltageOff, isMidday, type Row } from "./domain";
 import { notifyAlert, type Who } from "./whatsapp";
+import { logger } from "@sol/observability";
 
 type Plant = typeof plants.$inferSelect;
 
@@ -38,6 +39,7 @@ async function streak(db: Db, key: string, bad: boolean) {
 }
 
 async function raise(c: Ctx, kind: string, msg: string) {
+  logger.info({ kind, plantId: c.plant.id, accountId: c.accountId }, "alerta disparado");
   await notifyAlert(c.db, c.who, c.settings, c.plant.id, kind, msg);
   await c.db.insert(alerts).values({ plantId: c.plant.id, accountId: c.accountId, kind, message: msg, occurredAt: c.now, notifiedAt: c.now });
 }
@@ -224,7 +226,7 @@ export async function runRules(db: Db, who: Who, settings: Settings, plantId: nu
     try {
       await run();
     } catch (e) {
-      console.error(`regra "${label}" falhou:`, e);
+      logger.error({ err: e, rule: label, plantId }, "regra falhou");
     }
   }
 }

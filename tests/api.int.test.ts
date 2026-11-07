@@ -53,9 +53,13 @@ describe.skipIf(!url)("API REST com Postgres real", () => {
     // importa depois de ajustar o ambiente: o getDb() das rotas lê DATABASE_URL no primeiro uso
     const resumo = await import("../apps/web/app/api/usinas/[id]/resumo/route");
     const alertas = await import("../apps/web/app/api/alertas/route");
+    const health = await import("../apps/web/app/api/health/route");
+    const metrics = await import("../apps/web/app/api/metrics/route");
     server = serveRoutes([
       { pattern: /^\/api\/usinas\/(?<id>[^/]+)\/resumo$/, handler: (req, p) => resumo.GET(req, { params: Promise.resolve({ id: p.id }) }) },
       { pattern: /^\/api\/alertas$/, handler: (req) => alertas.GET(req) },
+      { pattern: /^\/api\/health$/, handler: () => health.GET() },
+      { pattern: /^\/api\/metrics$/, handler: () => metrics.GET() },
     ]);
   });
 
@@ -101,5 +105,17 @@ describe.skipIf(!url)("API REST com Postgres real", () => {
   test("alertas com parâmetro inválido: 400", async () => {
     await request(server).get("/api/alertas?tipo=inexistente").set("Cookie", owner).expect(400);
     await request(server).get("/api/alertas?limite=999").set("Cookie", owner).expect(400);
+  });
+
+  test("health: aplicação e banco respondendo", async () => {
+    const res = await request(server).get("/api/health").expect(200);
+    expect(res.body).toMatchObject({ status: "ok", banco: "ok" });
+  });
+
+  test("métricas: latência registrada por rota e status, no formato do Prometheus", async () => {
+    const res = await request(server).get("/api/metrics").expect(200);
+    expect(res.headers["content-type"]).toMatch(/text\/plain/);
+    expect(res.text).toContain('http_request_duration_seconds_count{route="/api/usinas/{id}/resumo",status="200"}');
+    expect(res.text).toContain('http_request_duration_seconds_count{route="/api/alertas",status="400"}');
   });
 });

@@ -4,9 +4,10 @@ import { readSession, SESSION_COOKIE } from "@/lib/session";
 /**
  * Rotas que respondem sozinhas a quem não está logado, em vez de redirecionar para /login:
  * - endpoints do app de IA (token Bearer / PKCE); /oauth/authorize fica protegido;
- * - API REST: o handler confere a sessão e responde 401 em JSON.
+ * - API REST: o handler confere a sessão e responde 401 em JSON;
+ * - /api/health e /api/metrics: públicos para o monitoramento (sem dados de usina).
  */
-const OPEN = [/^\/mcp$/, /^\/\.well-known\//, /^\/oauth\/(register|token)$/, /^\/api\/(usinas\/[^/]+\/resumo|alertas)$/];
+const OPEN = [/^\/mcp$/, /^\/\.well-known\//, /^\/oauth\/(register|token)$/, /^\/api\/(usinas\/[^/]+\/resumo|alertas)$/, /^\/api\/(health|metrics)$/];
 
 /** Exige login (conta Solplanet ou Livoltek) em todas as páginas, exceto /login e os endpoints do MCP. */
 export function proxy(req: NextRequest) {

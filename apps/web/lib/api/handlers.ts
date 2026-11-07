@@ -1,4 +1,5 @@
 import type { Db } from "@sol/db";
+import { timed } from "@sol/observability";
 import { z } from "zod";
 import { readSession, SESSION_COOKIE } from "../session";
 import { ALERT_KIND } from "../status";
@@ -21,7 +22,11 @@ export function sessionFrom(req: Request) {
 const plantId = z.coerce.number().int().positive();
 
 /** GET /api/usinas/{id}/resumo: fluxo principal da API. */
-export async function resumoHandler(db: Db, req: Request, rawId: string) {
+export function resumoHandler(db: Db, req: Request, rawId: string) {
+  return timed("/api/usinas/{id}/resumo", () => resumo(db, req, rawId));
+}
+
+async function resumo(db: Db, req: Request, rawId: string) {
   const session = sessionFrom(req);
   if (!session) return fail(401, "não autenticado");
   const id = plantId.safeParse(rawId);
@@ -39,7 +44,11 @@ const alertQuery = z.object({
 });
 
 /** GET /api/alertas?tipo=&limite= */
-export async function alertasHandler(db: Db, req: Request) {
+export function alertasHandler(db: Db, req: Request) {
+  return timed("/api/alertas", () => alertas(db, req));
+}
+
+async function alertas(db: Db, req: Request) {
   const session = sessionFrom(req);
   if (!session) return fail(401, "não autenticado");
   const q = alertQuery.safeParse(Object.fromEntries(new URL(req.url).searchParams));

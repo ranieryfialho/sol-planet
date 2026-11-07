@@ -1,0 +1,21 @@
+{
+  "name": "@sol/observability",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./health": "./src/health.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@sol/db": "workspace:*",
+    "drizzle-orm": "^0.45.4",
+    "pino": "^10.4.0",
+    "prom-client": "^15.1.3"
+  }
+}

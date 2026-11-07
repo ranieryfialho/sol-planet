@@ -1,0 +1,8 @@
+# Falsos positivos aceitos (ver README > Segredos): appKey/appSecret públicos do APK do app Solplanet,
+# extraídos por engenharia reversa e iguais em qualquer instalação do app. Não são credenciais do projeto.
+4b529af8003e3abbdca6b61b5437613b4b06403a:packages/solplanet/src/index.ts:generic-api-key:23
+4b529af8003e3abbdca6b61b5437613b4b06403a:packages/solplanet/src/index.ts:generic-api-key:24
+4b529af8003e3abbdca6b61b5437613b4b06403a:packages/solplanet/src/index.ts:generic-api-key:28
+4b529af8003e3abbdca6b61b5437613b4b06403a:packages/solplanet/src/index.ts:generic-api-key:29
+4b529af8003e3abbdca6b61b5437613b4b06403a:packages/solplanet/src/index.ts:generic-api-key:33
+4b529af8003e3abbdca6b61b5437613b4b06403a:packages/solplanet/src/index.ts:generic-api-key:34
