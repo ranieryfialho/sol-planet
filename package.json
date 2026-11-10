@@ -11,6 +11,7 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "test:coverage": "vitest run --coverage",
+    "lint:env": "node scripts/check-env.mjs",
     "lint:openapi": "spectral lint docs/openapi.yaml --fail-severity=warn",
     "demo:session": "pnpm --silent --filter @sol/worker exec tsx ../../scripts/demo-session.mts",
     "test:ui": "vitest --ui"

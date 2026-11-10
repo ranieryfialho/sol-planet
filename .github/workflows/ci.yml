@@ -51,6 +51,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Valida o .env.example contra o código
+        run: pnpm lint:env
+
       - name: Lint do contrato OpenAPI (Spectral)
         run: pnpm lint:openapi
 
