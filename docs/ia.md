@@ -100,6 +100,20 @@ Pelo escopo A, faltaria: monólito modular com fronteiras explícitas e volume d
 
 **Regra para as próximas entradas:** a cada etapa executada, este documento ganha uma entrada com o prompt resumido, o resultado e a decisão. Decisões ainda não tomadas ficam marcadas como pendentes na tabela abaixo.
 
+### 11. Aprovação e primeiras entregas
+
+**Prompt:** "Sim, vamos lá."
+
+**Resultado:** com o plano aprovado, a IA executou os itens que não dependiam das perguntas em aberto, um commit semântico por item, rodando lint, typecheck e testes (com Postgres do compose local) antes de cada commit:
+
+- `ci(env)`: `scripts/check-env.mjs` confere o `.env.example` contra o código e o compose, e recusa valores com cara de segredo. Ao rodar pela primeira vez, ele achou três variáveis que o código já lia e o exemplo não documentava (`EVOLUTION_INSTANCE`, `READINGS_RETENTION_DAYS`, `DEMO_ACCOUNT_ID`).
+- `docs(c4)`: diagramas de contexto e de contêineres em Mermaid, com as integrações conferidas no código (Solplanet, Livoltek, Evolution, Open-Meteo, mapa).
+- `feat(web)`: flag `FEATURE_MCP`, que desliga o MCP, o OAuth e a página "Conectar IA".
+- `build(compose)`, `ci(deploy)` e `docs(adr)`: staging autocontido, deploy em dois estágios com verificação de saúde e rollback, ADR 0002 e `docs/deploy.md`.
+- `docs(readme)`: tabela dos itens do A incorporados e do que **não** entrou.
+
+**Problemas que a verificação pegou:** ao subir o staging localmente para validá-lo, o `next build` da imagem falhou: o commit da flag tinha um erro de tipo em `nav.tsx` que o `pnpm typecheck` da raiz não cobre. Teria quebrado o próximo deploy de produção. Foi corrigido no mesmo commit (ainda não publicado) e a flag foi testada de ponta a ponta no compose de staging (com ela ligada, `/mcp` responde 401; desligada, `/mcp`, `/oauth/token` e `/conectar-ia` respondem 404 e `/api/health` continua 200).
+
 ## Sugestões da IA × decisões
 
 | Tema                       | Sugestão da IA                                        | Decisão                                                                               |
@@ -113,9 +127,11 @@ Pelo escopo A, faltaria: monólito modular com fronteiras explícitas e volume d
 | Padrão do M1              | Núcleo de domínio puro com E/S na borda              | ✅ [ADR 0001](adr/0001-nucleo-de-dominio-puro.md), com a hexagonal completa descartada  |
 | Rodadas ao banco no resumo | Juntar `canSeePlant` e `plants` num `join`       | ⏸️ Próximo passo: o SLO já está atendido com folga                                |
 | Autenticação da API      | Bearer via OAuth já existente, para clientes externos | ⏸️ Mantido o cookie nesta entrega, com o Bearer registrado como evolução           |
-| Ajustes pós-entrega        | Plano em 7 passos, começando por `.env.example`, C4, flag e ADR 0002, com a proteção da `main` por último | ⏸️ Pendente de aprovação e das 3 perguntas em aberto |
+| Ajustes pós-entrega        | Plano em 7 passos, começando por `.env.example`, C4, flag e ADR 0002, com a proteção da `main` por último | ✅ Aprovado ("vamos lá"); itens 1 a 5 executados, restam proteção da `main` e staging online |
 | Commits                    | Conventional Commits em português, sem reescrever o histórico publicado | ✅ Adotado daqui em diante |
-| Staging online com seed    | Útil como complemento, não exigido pela aula          | ⏸️ Pendente: depende do acesso do avaliador e da VPS |
+| Staging online com seed    | Útil como complemento, não exigido pela aula          | 🔄 Compose e deploy prontos; falta publicar na VPS e decidir o acesso do avaliador |
+| Flag de funcionalidade     | Variável de ambiente em vez de Unleash/GrowthBook     | ✅ [ADR 0002](adr/0002-flags-por-ambiente-e-staging-na-vps.md) |
+| Banco do staging           | Postgres próprio com dados simulados, em vez de cópia da produção | ✅ [ADR 0002](adr/0002-flags-por-ambiente-e-staging-na-vps.md) |
 
 ## Problemas encontrados no caminho
 
