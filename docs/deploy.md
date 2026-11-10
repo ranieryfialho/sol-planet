@@ -9,6 +9,7 @@
 | Compose | [docker-compose.staging.yml](../docker-compose.staging.yml) | [docker-compose.yml](../docker-compose.yml) |
 | Pasta na VPS / projeto compose | `~/solar-staging` / `solar-staging` | `~/solar` / `solar` |
 | Banco | Postgres próprio, volume `pg_staging`, recriado a cada deploy | Postgres existente da VPS (rede `PG_NETWORK`) |
+| URL pública | https://staging-solar.rafiweb.com.br | https://solar.rafiweb.com.br |
 | Endereço no proxy reverso | `http://solar-staging-web:3000` | `http://solar-web:3000` |
 | Porta no host (`WEB_PORT`) | 3011, só em `127.0.0.1`, usada pelo health do deploy | do `.env` (padrão 3000) |
 | Worker de coleta e WhatsApp | Não sobe | Sobe |
