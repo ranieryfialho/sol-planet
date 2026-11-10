@@ -39,7 +39,7 @@ O GitHub só oferece aprovador obrigatório em Environments para repositórios p
 
 ## Teste de desempenho no staging
 
-Depois de cada deploy do staging, o job `desempenho` roda o [k6/smoke.js](../k6/smoke.js) contra a **URL pública** (`https://staging-solar.rafiweb.com.br`), então a latência medida inclui a rede, o proxy reverso e o HTTPS. O resultado (p95, mediana, p99 e checks) aparece no resumo da execução em *Actions*, e o JSON do k6 fica como artefato `k6-staging`. O job fica vermelho se o SLO (p95 < 300 ms, menos de 1% de erro) não for cumprido, mas **não bloqueia nada**: a produção só sobe por ação manual.
+Depois de cada deploy do staging, o job `desempenho` roda o [k6/smoke.js](../k6/smoke.js) contra a **URL pública** (`https://staging-solar.rafiweb.com.br`), então a latência medida inclui a rede, o proxy reverso e o HTTPS. O resultado (p95, mediana, p99 e checks) aparece no resumo da execução em *Actions*. O job fica vermelho se o SLO (p95 < 300 ms, menos de 1% de erro) não for cumprido, mas **não bloqueia nada**: a produção só sobe por ação manual.
 
 O k6 assina a sessão da conta demo com o `AUTH_SECRET` do staging. Por isso o deploy grava no `.env` do staging o valor do *secret* `STAGING_AUTH_SECRET`. Sem esse secret, o job avisa e é pulado.
 
