@@ -140,13 +140,24 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 
 ### 17. Proxy reverso do staging (item 3)
 
-**Prompt:** "Meu proxy reverso é o Nginx Proxy Manager e eu sigo o padrão nome do contêiner + porta (por exemplo, `solar-web:3000`). Quero manter esse padrão no staging. Como configuramos? (Imagem anexa: o proxy host da produção.)"
+**Prompt:** "Meu proxy reverso é o Nginx Proxy Manager e eu sigo o padrão nome do contêiner + porta (por exemplo, `solar-web:3000`). Quero manter esse padrão no staging."
 
 **Resultado:** a IA identificou, pela imagem, que o NPM alcança o contêiner pela **rede Docker**, e não pela porta do host, e que o compose de staging não tinha nada disso. Ajustou o `docker-compose.staging.yml`: nome fixo `solar-staging-web`, entrada do `web` na rede externa do proxy (`PROXY_NETWORK`) e porta do host apenas em `127.0.0.1`, para o health do deploy. O Postgres do staging continua só na rede do próprio compose.
 
 **Validação:** simulando o NPM com uma rede compartilhada de teste, `http://solar-staging-web:3000/api/health` respondeu 200 e o Postgres do staging ficou inalcançável por ela. A rede e os contêineres do teste foram removidos.
 
 **Premissa a confirmar na VPS:** o nome padrão da rede é `wp-network`, tirado do `.env.example`. O `docs/deploy.md` traz o comando para conferir o nome real.
+
+### 18. Merge, verificação do staging e acesso do avaliador
+
+**Prompt:** "O proxy host do staging está pronto. Faça o merge do PR, acompanhe o deploy e confirme se o staging responde. Depois resolva o acesso do avaliador: ele precisa conseguir entrar e ver o dashboard com os dados simulados."
+
+**Resultado:**
+
+- **Merge.** A IA tentou mesclar pela linha de comando, e o Claude Code bloqueou a ação por ser uma publicação na `main` sem revisão. A IA não contornou o bloqueio e devolveu a decisão: o merge foi feito por você, na interface do GitHub, com *merge commit* para preservar os commits semânticos.
+- **Deploy.** O staging subiu com sucesso, e a produção ficou `skipped`, como projetado. Pela URL pública: `/api/health` responde 200 com HTTPS, `/api/metrics` responde 200, as rotas protegidas redirecionam ao login ou respondem 401 e o `/mcp` responde 401. A produção continua na versão anterior, sem tocar.
+- **Acesso do avaliador.** A IA propôs criar uma nova flag de login demo, e você aprovou. Antes de escrever código, ela leu o fluxo de login e percebeu que ele **já aceita** uma conta conhecida com a senha guardada, sem chamar a Solplanet. Provou isso com um navegador real, no compose local e no staging público: `demo@solar.local` / `demo-sem-coleta` chega ao dashboard, e senha errada volta ao login com erro. **Nenhum código foi necessário**; o que estava errado era o README, que afirmava o contrário, e foi corrigido. A flag e o ADR 0003 propostos foram descartados por desnecessários.
+- **Defeito encontrado no teste.** Na subida do zero (volume novo), o `seed` falhou uma vez com `ECONNREFUSED`: o `pg_isready` passava enquanto o Postgres ainda inicializava num servidor temporário. O mesmo healthcheck existia no `docker-compose.local.yml`, o caminho do avaliador. Foi corrigido nos dois compose, usando TCP (`-h 127.0.0.1`), e validado com 4 subidas do zero seguidas.
 
 ## Sugestões da IA × decisões
 
@@ -161,8 +172,10 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 | Padrão do M1                    | Núcleo de domínio puro com E/S na borda                                                                         | ✅ [ADR 0001](adr/0001-nucleo-de-dominio-puro.md), com a hexagonal completa descartada                                                                |
 | Rodadas ao banco no resumo       | Juntar `canSeePlant` e `plants` num `join`                                                                  | ⏸️ Próximo passo: o SLO já está atendido com folga                                                                                              |
 | Autenticação da API            | Bearer via OAuth já existente, para clientes externos                                                            | ⏸️ Mantido o cookie nesta entrega, com o Bearer registrado como evolução                                                                         |
-| Publicação | PR para a `main`, sem merge até a VPS estar pronta | ✅ PR #1 aberto, CI verde |
-| Proxy do staging | Mesmo padrão da produção (nome do contêiner + porta, pela rede do NPM) | ✅ Compose ajustado e testado; rede `wp-network` ainda a confirmar na VPS |
+| Publicação                     | PR para a `main`, sem merge até a VPS estar pronta                                                             | ✅ PR #1 aberto, CI verde                                                                                                                            |
+| Proxy do staging                 | Mesmo padrão da produção (nome do contêiner + porta, pela rede do NPM)                                        | ✅ Compose ajustado e testado; rede `wp-network` ainda a confirmar na VPS                                                                          |
+| Acesso do avaliador | Nova flag `FEATURE_DEMO_LOGIN` (login demo só no staging) | ❌ Descartada por desnecessária: o login já aceita a conta demo (provado em teste); só o README estava errado |
+| Healthcheck do Postgres | `pg_isready` por socket | 🔄 Trocado por TCP nos dois compose, após o seed falhar na 1ª subida |
 | Estrutura do CI                  | Jobs paralelos + `gates` + composite actions, como no medguia                                                   | ✅ Aplicado                                                                                                                                          |
 | Aprovação da produção        | Aprovador obrigatório no Environment `production`                                                              | 🔄 O GitHub recusou (422): exige plano pago em repositório privado. **Decisão:** produção só por acionamento manual, a partir da `main` |
 | Bypass na proteção da `main` | Sem exceção, nem para o admin                                                                                   | ✅ Aceito                                                                                                                                            |
