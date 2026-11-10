@@ -69,6 +69,24 @@ Planning Time: 0.953 ms
 Execution Time: 0.072 ms
 ```
 
+## Resultado no staging, pela rede (10/11/2026)
+
+O mesmo smoke test, rodado pelo job `desempenho` do deploy ([deploy.yml](../.github/workflows/deploy.yml)) **a partir de um runner do GitHub Actions contra a URL pública do staging**. A medição inclui a distância de rede até a VPS, o proxy reverso e o HTTPS, que o teste local não tinha. O staging usa o Postgres próprio do compose, com a mesma massa do seed.
+
+| Métrica | Valor |
+|---|---|
+| Requisições ao resumo | 87 em 30 s (2 VUs) |
+| Checks | 258 de 258 (100%) |
+| Erros | 0,00% |
+| Mediana | 195,0 ms |
+| **p95** | **240,8 ms** ✅ (SLO: < 300 ms) |
+| p99 | 306,6 ms |
+| Máximo | 323,1 ms |
+
+Os valores são da métrica filtrada por `endpoint:resumo`, a mesma dos thresholds. A tabela geral que o k6 imprime inclui também a chamada de `/api/health` do `setup` e por isso difere nas casas decimais.
+
+**Como ler:** o p95 passou de 24 ms (local) para cerca de 241 ms pela rede, porque a maior parte do tempo agora é rede, e não processamento: no servidor, o resumo continua em poucos milissegundos (ver `/api/metrics`). O SLO de 300 ms é cumprido, mas com **folga de cerca de 60 ms**, bem menor que a do teste local. O p99 (306 ms) passou do limite, mas o SLO é definido sobre o p95. É uma única execução de 30 s: serve como prova do SLO, não como linha de base estatística. Se a folga apertar, o próximo passo é o item "juntar `canSeePlant` e `plants` num `join`" descrito em [ia.md](ia.md) (8.4).
+
 ## Análise e gargalo
 
 - Com carga de smoke, o SLO tem folga de mais de 10 vezes: p95 de 24 ms contra o limite de 300 ms.
