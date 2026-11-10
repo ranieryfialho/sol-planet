@@ -124,39 +124,33 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 
 ### 14. CI granular, no modelo de outro projeto
 
-**Prompt:** "Quero que o CI siga a organização do projeto `scrumboard-medguia` (`.github/actions`): jobs separados e granulares, com ações reutilizáveis."
+**Prompt:** "Quero que o CI siga a seguinte organização: jobs separados e granulares, com ações reutilizáveis."
 
 **Resultado:** a IA leu o `.github` do outro projeto e aplicou o que ele tem de granular: jobs em paralelo por responsabilidade, um job `gates` como único check obrigatório da `main`, composite actions locais e permissões mínimas. O `ci.yml` virou seis jobs (`lint`, `tipos`, `build`, `contratos`, `testes`, `segredos`) mais o `gates`. O passo comum e o deploy viraram as actions `preparar` e `deploy-vps`. Entrou também um job de **build do Next**, que não existia e que teria pego o erro da entrada 11. A regra da `main` passou a exigir só o `gates`.
 
 **Escolha da IA, a rever se quiser:** o CI deixou de rodar em todo push e passou a rodar em PR para a `main`, push na `main` e acionamento manual, como no outro projeto.
 
-### 15. Revisão deste documento
-
-**Prompt:** "O `docs/ia.md` ficou fraco: os prompts parecem soltos e pouco claros. Reescreva-os para que apresentem objetivo, restrições e critério de pronto, sem perder a intenção original, e mantenha o documento enxuto."
-
-**Resultado:** esta versão. Os prompts da seção de ajustes foram reescritos, os resultados encurtados e a nota do início passou a dizer que os prompts são reescritos, e não literais. Entraram também as interações 13 e 14, que ainda não estavam registradas.
-
 ## Sugestões da IA × decisões
 
-| Tema                       | Sugestão da IA                                        | Decisão                                                                               |
-| -------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| Endpoint principal         | `/api/health` no primeiro rascunho                   | ❌ Trocado por `GET /api/usinas/{id}/resumo` (domínio real)                         |
-| O que documentar           | Só o escopo B                                         | ❌ **Documentar tudo** e marcar o que é extra                                   |
-| Ferramentas de teste       | `node:test` nativo                                   | ❌ **Vitest + Supertest**, como o escopo sugere                                  |
-| Cobertura mínima          | 80% de linhas                                          | ✅ Aceito depois de confirmar a viabilidade                                            |
-| Compose de um comando      | Profile no compose de produção                       | 🔄 Arquivo separado (`docker-compose.local.yml`), para não arriscar o deploy da VPS |
-| Gitleaks                   | Três alternativas                                     | ✅ Allowlist justificada                                                               |
-| Padrão do M1              | Núcleo de domínio puro com E/S na borda              | ✅ [ADR 0001](adr/0001-nucleo-de-dominio-puro.md), com a hexagonal completa descartada  |
-| Rodadas ao banco no resumo | Juntar `canSeePlant` e `plants` num `join`       | ⏸️ Próximo passo: o SLO já está atendido com folga                                |
-| Autenticação da API      | Bearer via OAuth já existente, para clientes externos | ⏸️ Mantido o cookie nesta entrega, com o Bearer registrado como evolução           |
-| Estrutura do CI | Jobs paralelos + `gates` + composite actions, como no medguia | ✅ Aplicado |
-| Aprovação da produção     | Aprovador obrigatório no Environment `production` | 🔄 O GitHub recusou (422): exige plano pago em repositório privado. **Decisão:** produção só por acionamento manual, a partir da `main` |
-| Bypass na proteção da `main` | Sem exceção, nem para o admin | ✅ Aceito |
-| Ajustes pós-entrega        | Plano em 7 passos, começando por `.env.example`, C4, flag e ADR 0002, com a proteção da `main` por último | ✅ Aprovado ("vamos lá"); itens 1 a 5 executados, restam proteção da `main` e staging online |
-| Commits                    | Conventional Commits em português, sem reescrever o histórico publicado | ✅ Adotado daqui em diante |
-| Staging online com seed    | Útil como complemento, não exigido pela aula          | 🔄 Compose e deploy prontos; falta publicar na VPS e decidir o acesso do avaliador |
-| Flag de funcionalidade     | Variável de ambiente em vez de Unleash/GrowthBook     | ✅ [ADR 0002](adr/0002-flags-por-ambiente-e-staging-na-vps.md) |
-| Banco do staging           | Postgres próprio com dados simulados, em vez de cópia da produção | ✅ [ADR 0002](adr/0002-flags-por-ambiente-e-staging-na-vps.md) |
+| Tema                             | Sugestão da IA                                                                                                   | Decisão                                                                                                                                             |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Endpoint principal               | `/api/health` no primeiro rascunho                                                                              | ❌ Trocado por `GET /api/usinas/{id}/resumo` (domínio real)                                                                                       |
+| O que documentar                 | Só o escopo B                                                                                                    | ❌ **Documentar tudo** e marcar o que é extra                                                                                                 |
+| Ferramentas de teste             | `node:test` nativo                                                                                              | ❌ **Vitest + Supertest**, como o escopo sugere                                                                                                |
+| Cobertura mínima                | 80% de linhas                                                                                                     | ✅ Aceito depois de confirmar a viabilidade                                                                                                          |
+| Compose de um comando            | Profile no compose de produção                                                                                  | 🔄 Arquivo separado (`docker-compose.local.yml`), para não arriscar o deploy da VPS                                                               |
+| Gitleaks                         | Três alternativas                                                                                                | ✅ Allowlist justificada                                                                                                                             |
+| Padrão do M1                    | Núcleo de domínio puro com E/S na borda                                                                         | ✅ [ADR 0001](adr/0001-nucleo-de-dominio-puro.md), com a hexagonal completa descartada                                                                |
+| Rodadas ao banco no resumo       | Juntar `canSeePlant` e `plants` num `join`                                                                  | ⏸️ Próximo passo: o SLO já está atendido com folga                                                                                              |
+| Autenticação da API            | Bearer via OAuth já existente, para clientes externos                                                            | ⏸️ Mantido o cookie nesta entrega, com o Bearer registrado como evolução                                                                         |
+| Estrutura do CI                  | Jobs paralelos + `gates` + composite actions, como no medguia                                                   | ✅ Aplicado                                                                                                                                          |
+| Aprovação da produção        | Aprovador obrigatório no Environment `production`                                                              | 🔄 O GitHub recusou (422): exige plano pago em repositório privado. **Decisão:** produção só por acionamento manual, a partir da `main` |
+| Bypass na proteção da `main` | Sem exceção, nem para o admin                                                                                   | ✅ Aceito                                                                                                                                            |
+| Ajustes pós-entrega             | Plano em 7 passos, começando por `.env.example`, C4, flag e ADR 0002, com a proteção da `main` por último | ✅ Aprovado ("vamos lá"); itens 1 a 5 executados, restam proteção da `main` e staging online                                                    |
+| Commits                          | Conventional Commits em português, sem reescrever o histórico publicado                                         | ✅ Adotado daqui em diante                                                                                                                           |
+| Staging online com seed          | Útil como complemento, não exigido pela aula                                                                    | 🔄 Compose e deploy prontos; falta publicar na VPS e decidir o acesso do avaliador                                                                   |
+| Flag de funcionalidade           | Variável de ambiente em vez de Unleash/GrowthBook                                                                | ✅ [ADR 0002](adr/0002-flags-por-ambiente-e-staging-na-vps.md)                                                                                        |
+| Banco do staging                 | Postgres próprio com dados simulados, em vez de cópia da produção                                             | ✅ [ADR 0002](adr/0002-flags-por-ambiente-e-staging-na-vps.md)                                                                                        |
 
 ## Problemas encontrados no caminho
 
