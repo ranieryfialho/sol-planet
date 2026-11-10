@@ -85,7 +85,7 @@ export function check(root) {
       /* pasta inexistente */
     }
   }
-  for (const f of ["docker-compose.yml", "docker-compose.local.yml"]) {
+  for (const f of ["docker-compose.yml", "docker-compose.local.yml", "docker-compose.staging.yml"]) {
     note(envNamesInCompose(readFileSync(join(root, f), "utf8")), join(root, f));
   }
 
