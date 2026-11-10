@@ -6,6 +6,7 @@ import { LivoltekCollector } from "./livoltek-collector";
 import { config, localNow } from "./config";
 import { buildDailyReport, buildMonthlyReport, buildWeeklyReport, previousMonth } from "./report";
 import { notify } from "./whatsapp";
+import { logger } from "@sol/observability";
 
 const db = createDb();
 await runMigrations(db);
@@ -34,9 +35,9 @@ async function syncCollectors() {
   for (const acc of await listAccounts(db)) {
     const password = decryptSecret(acc.passwordEnc);
     if (password === null) {
-      console.error(`[${acc.account}] senha ilegível (AUTH_SECRET mudou?): entre de novo no dashboard para regravar`);
+      logger.error({ accountId: acc.id }, "senha ilegível (AUTH_SECRET mudou?): entre de novo no dashboard para regravar");
       collectors.delete(acc.id);
-      await warnUnreadablePassword(acc.id, acc.account).catch((e) => console.error("aviso de senha ilegível falhou:", e));
+      await warnUnreadablePassword(acc.id, acc.account).catch((e) => logger.error({ err: e, accountId: acc.id }, "aviso de senha ilegível falhou"));
       continue;
     }
     const known = collectors.get(acc.id);
@@ -82,7 +83,7 @@ async function maybeSendWeekly(c: AnyCollector) {
 const RETENTION_DAYS = Number(process.env.READINGS_RETENTION_DAYS ?? 90);
 async function pruneReadings() {
   const res = await db.execute(sql`delete from readings where ts < now() - make_interval(days => ${RETENTION_DAYS})`);
-  if (res.count) console.log(`retenção: ${res.count} leituras com mais de ${RETENTION_DAYS} dias apagadas`);
+  if (res.count) logger.info({ apagadas: res.count, dias: RETENTION_DAYS }, "retenção: leituras antigas apagadas");
 }
 
 /** Dia 1, a partir do horário do relatório: resumo do mês que passou (uma vez por mês). */
@@ -115,11 +116,11 @@ async function cycle() {
         await maybeSendWeekly(c);
         await maybeSendMonthly(c);
       } catch (e) {
-        console.error(`ciclo da conta ${c.accountId} falhou:`, e);
+        logger.error({ err: e, accountId: c.accountId }, "ciclo da conta falhou");
       }
     }
   } catch (e) {
-    console.error("ciclo falhou:", e);
+    logger.error({ err: e }, "ciclo falhou");
   } finally {
     running = false;
   }
@@ -137,20 +138,21 @@ async function pickupNewAccounts() {
       try {
         await c.tick(claimed);
       } catch (e) {
-        console.error(`primeira coleta da conta ${c.accountId} falhou:`, e);
+        logger.error({ err: e, accountId: c.accountId }, "primeira coleta da conta falhou");
       }
     }
   } catch (e) {
-    console.error("verificação de contas novas falhou:", e);
+    logger.error({ err: e }, "verificação de contas novas falhou");
   } finally {
     running = false;
   }
 }
 
-await pruneReadings().catch((e) => console.error("retenção falhou:", e));
-setInterval(() => pruneReadings().catch((e) => console.error("retenção falhou:", e)), 24 * 3600_000);
+const prune = () => pruneReadings().catch((e) => logger.error({ err: e }, "retenção falhou"));
+await prune();
+setInterval(prune, 24 * 3600_000);
 
-console.log(`worker iniciado: coleta a cada ${config.pollMinutes} min (${config.timezone})`);
+logger.info({ pollMinutes: config.pollMinutes, timezone: config.timezone }, "worker iniciado");
 await cycle();
 setInterval(cycle, config.pollMinutes * 60_000);
 setInterval(pickupNewAccounts, 15_000);

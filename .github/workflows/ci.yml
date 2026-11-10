@@ -1,0 +1,117 @@
+name: CI
+
+# Pull requests para a main, pushes na main e acionamento manual (para rodar em qualquer branch).
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Um push novo no mesmo PR cancela a rodada anterior, que já está obsoleta.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# Cada verificação é um job próprio e todos rodam AO MESMO TEMPO, cada um na sua máquina: uma falha aponta
+# exatamente o que quebrou, e a rodada mostra todas as falhas de uma vez. O `gates` no fim é o ÚNICO check
+# obrigatório da regra da `main` (nome fixo): só passa se todos os outros passaram.
+# O passo comum (pnpm, Node e dependências) fica em .github/actions/preparar.
+jobs:
+  lint:
+    name: lint (ESLint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preparar
+      - run: pnpm lint
+
+  tipos:
+    name: tipos (TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preparar
+      - run: pnpm typecheck
+
+  build:
+    name: build (Next.js)
+    # o typecheck da raiz não cobre o que o `next build` confere (já deixou passar um erro de tipo em nav.tsx)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preparar
+      - run: pnpm --filter @sol/web build
+
+  contratos:
+    name: contratos (OpenAPI e .env.example)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preparar
+      - name: Lint do contrato OpenAPI (Spectral)
+        run: pnpm lint:openapi
+      - name: Valida o .env.example contra o código e o compose
+        run: pnpm lint:env
+
+  testes:
+    name: testes e cobertura mínima
+    runs-on: ubuntu-latest
+    services:
+      # banco só dos testes de integração (nome *_test: o teste apaga os dados)
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: solar
+          POSTGRES_PASSWORD: solar
+          POSTGRES_DB: solar_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U solar -d solar_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      TEST_DATABASE_URL: postgres://solar:solar@localhost:5432/solar_test
+      TZ: America/Sao_Paulo
+      LOG_LEVEL: warn
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preparar
+      - name: Testes (unitários + integração) com cobertura mínima
+        run: pnpm test:coverage
+      - name: Resumo da cobertura
+        if: always()
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            node -e 'const t=require("./coverage/coverage-summary.json").total;console.log("| Métrica | % |\n|---|---|");for(const k of ["lines","statements","functions","branches"])console.log(`| ${k} | ${t[k].pct} |`)' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  segredos:
+    name: segredos (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # histórico completo: segredo apagado depois continua no git
+      - name: Gitleaks
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.28.0 git /repo --redact --no-banner -v
+
+  # Check obrigatório da regra da `main` (contexto "gates"): resume os jobs acima.
+  gates:
+    name: gates
+    if: always()
+    needs: [lint, tipos, build, contratos, testes, segredos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conferir o resultado dos jobs
+        env:
+          RESULTADOS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "lint, tipos, build, contratos, testes, segredos: $RESULTADOS"
+          for r in $RESULTADOS; do
+            [ "$r" = "success" ] || { echo "Algum job não passou."; exit 1; }
+          done

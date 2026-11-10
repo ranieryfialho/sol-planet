@@ -1,0 +1,89 @@
+name: Deploy na VPS
+description: Envia o código por SSH, sobe o docker compose do ambiente e só dá certo se o /api/health responder.
+inputs:
+  pasta: { description: "Pasta na VPS, ex.: solar-staging", required: true }
+  projeto: { description: "Nome do projeto do docker compose", required: true }
+  compose: { description: "Arquivo compose usado", required: true }
+  porta_padrao: { description: "Usada só se o .env não definir WEB_PORT", required: true }
+  ambiente: { description: "staging ou production (staging cria o .env sozinho na 1ª vez)", required: true }
+  ref: { description: "Commit, tag ou branch a implantar; vazio = o que já está em checkout", required: false, default: "" }
+  host: { required: true }
+  porta_ssh: { required: true }
+  usuario: { required: true }
+  chave: { required: true }
+runs:
+  using: composite
+  steps:
+    - name: Código da versão a implantar
+      # o job já fez checkout do ref do workflow (de onde vem esta ação); aqui troca para a versão pedida (rollback)
+      if: inputs.ref != ''
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.ref }}
+
+    - name: Preparar a pasta na VPS (preserva o .env)
+      uses: appleboy/ssh-action@master
+      env:
+        PASTA: ${{ inputs.pasta }}
+        AMBIENTE: ${{ inputs.ambiente }}
+        PORTA: ${{ inputs.porta_padrao }}
+      with:
+        host: ${{ inputs.host }}
+        port: ${{ inputs.porta_ssh }}
+        username: ${{ inputs.usuario }}
+        key: ${{ inputs.chave }}
+        envs: PASTA,AMBIENTE,PORTA
+        script: |
+          set -e
+          mkdir -p ~/$PASTA
+          if [ ! -f ~/$PASTA/.env ]; then
+            if [ "$AMBIENTE" = "staging" ]; then
+              # staging é descartável e só tem dados simulados: cria o .env sozinho na primeira vez
+              printf 'AUTH_SECRET=%s\nWEB_PORT=%s\nFEATURE_MCP=true\n' "$(openssl rand -hex 32)" "$PORTA" > ~/$PASTA/.env
+            else
+              echo "ERRO: ~/$PASTA/.env não existe na VPS. Crie-o a partir do .env.example antes do primeiro deploy."
+              exit 1
+            fi
+          fi
+          # apaga tudo menos o .env (e a senha de apoio do Postgres, se existir)
+          find ~/$PASTA -mindepth 1 -maxdepth 1 ! -name .env ! -name .solar_pg_pw -exec rm -rf {} +
+
+    - name: Enviar os arquivos para a VPS
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ inputs.host }}
+        port: ${{ inputs.porta_ssh }}
+        username: ${{ inputs.usuario }}
+        key: ${{ inputs.chave }}
+        source: "."
+        target: "~/${{ inputs.pasta }}"
+
+    - name: Construir, ligar e conferir a saúde
+      uses: appleboy/ssh-action@master
+      env:
+        PASTA: ${{ inputs.pasta }}
+        PROJETO: ${{ inputs.projeto }}
+        COMPOSE: ${{ inputs.compose }}
+        PORTA: ${{ inputs.porta_padrao }}
+      with:
+        host: ${{ inputs.host }}
+        port: ${{ inputs.porta_ssh }}
+        username: ${{ inputs.usuario }}
+        key: ${{ inputs.chave }}
+        envs: PASTA,PROJETO,COMPOSE,PORTA
+        script: |
+          set -e
+          cd ~/$PASTA
+          docker compose -p $PROJETO -f $COMPOSE up -d --build
+          docker image prune -f
+          docker compose -p $PROJETO -f $COMPOSE ps
+          # o deploy só vale se o /api/health responder (o job falha e o ambiente fica sinalizado)
+          P=$(grep -E '^WEB_PORT=' .env | tail -1 | cut -d= -f2)
+          P=${P:-$PORTA}
+          for i in $(seq 1 30); do
+            if curl -fsS "http://127.0.0.1:$P/api/health"; then echo; echo "saudável após $((i*4))s"; exit 0; fi
+            sleep 4
+          done
+          echo "ERRO: /api/health não respondeu em 120s"
+          docker compose -p $PROJETO -f $COMPOSE logs --tail=60
+          exit 1

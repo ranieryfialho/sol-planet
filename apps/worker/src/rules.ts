@@ -1,7 +1,9 @@
 import { alerts, dailyEnergy, getKv, inverters, kv, plants, readings, type Db, type Settings } from "@sol/db";
 import { eq, sql } from "drizzle-orm";
 import { config, zonedMidnight } from "./config";
+import { connectedStrings, dropPercent, fmtW, hasStringImbalance, isAfterSun, isGridVoltageOff, isMidday, type Row } from "./domain";
 import { notifyAlert, type Who } from "./whatsapp";
+import { logger } from "@sol/observability";
 
 type Plant = typeof plants.$inferSelect;
 
@@ -17,12 +19,6 @@ interface Ctx {
   day: string;
   time: string;
 }
-
-const mins = (hhmm: string) => {
-  const [h, m] = hhmm.split(":").map(Number);
-  return h * 60 + (m || 0);
-};
-const fmtW = (w: number) => (w >= 1000 ? `${(w / 1000).toFixed(2)} kW` : `${Math.round(w)} W`);
 
 const kvSet = (db: Db, key: string, value: unknown) =>
   db.insert(kv).values({ key, value }).onConflictDoUpdate({ target: kv.key, set: { value, updatedAt: new Date() } });
@@ -43,14 +39,13 @@ async function streak(db: Db, key: string, bad: boolean) {
 }
 
 async function raise(c: Ctx, kind: string, msg: string) {
+  logger.info({ kind, plantId: c.plant.id, accountId: c.accountId }, "alerta disparado");
   await notifyAlert(c.db, c.who, c.settings, c.plant.id, kind, msg);
   await c.db.insert(alerts).values({ plantId: c.plant.id, accountId: c.accountId, kind, message: msg, occurredAt: c.now, notifiedAt: c.now });
 }
 
-/** 30 min depois do fim do dia: com a janela no pôr do sol, o total do dia ainda está fechando. */
-const afterSun = (c: Ctx) => mins(c.time) >= mins(c.settings.rules.dayEnd) + 30;
-/** Meio do dia: duas horas de folga do nascer e do pôr do sol, quando a geração ainda é baixa de propósito. */
-const midday = (c: Ctx) => mins(c.time) >= mins(c.settings.rules.dayStart) + 120 && mins(c.time) < mins(c.settings.rules.dayEnd) - 120;
+const afterSun = (c: Ctx) => isAfterSun(c.time, c.settings.rules.dayEnd);
+const midday = (c: Ctx) => isMidday(c.time, c.settings.rules.dayStart, c.settings.rules.dayEnd);
 
 /** Depois do fim do sol: geração do dia X% abaixo da média dos 7 dias anteriores. */
 async function lowGeneration(c: Ctx) {
@@ -68,7 +63,7 @@ async function lowGeneration(c: Ctx) {
   if (!row?.avg || row.n < 3 || !today) return;
 
   await kvSet(c.db, key, c.day);
-  const drop = (1 - today.energyKwh / row.avg) * 100;
+  const drop = dropPercent(today.energyKwh, row.avg);
   if (drop < rules.lowGenerationPct) return;
   await raise(
     c,
@@ -117,16 +112,14 @@ async function zeroGeneration(c: Ctx) {
   );
 }
 
-type Row = { name?: string; v?: number; i?: number; p?: number };
-
 /** Meio do dia: uma string PV rende X% menos que a melhor (sombra, sujeira, conector). */
 async function stringImbalance(c: Ctx, invs: (typeof inverters.$inferSelect)[]) {
   const { rules } = c.settings;
   if (!rules.stringImbalance || !midday(c)) return;
   for (const inv of invs) {
     // só strings com tensão (conectadas); uma string vazia não é desequilíbrio
-    const strings = ((inv.pv as Row[] | null) ?? []).filter((s) => (s.v ?? 0) > 50);
-    const bad = strings.length >= 2 && (inv.powerW ?? 0) >= 1000 && Math.min(...strings.map((s) => s.p ?? 0)) < Math.max(...strings.map((s) => s.p ?? 0)) * (1 - rules.stringImbalancePct / 100);
+    const strings = connectedStrings(inv.pv as Row[] | null);
+    const bad = hasStringImbalance(strings, inv.powerW ?? 0, rules.stringImbalancePct);
     // 5 coletas seguidas: sombra passageira não conta
     if ((await streak(c.db, `str:${c.accountId}:${inv.sn}`, bad)) < 5 || !(await once(c.db, `str_alert:${c.accountId}:${inv.sn}`, c.day))) continue;
     const weak = strings.reduce((a, b) => ((a.p ?? 0) <= (b.p ?? 0) ? a : b));
@@ -146,11 +139,7 @@ async function gridVoltage(c: Ctx, invs: (typeof inverters.$inferSelect)[]) {
   for (const inv of invs) {
     const lines = ((inv.ac as Row[] | null) ?? []).filter((l) => (l.v ?? 0) > 50);
     // nominal mais próximo: 127 V ou 220 V
-    const off = lines.find((l) => {
-      const v = l.v ?? 0;
-      const nom = Math.abs(v - 127) < Math.abs(v - 220) ? 127 : 220;
-      return v > nom * 1.1 || v < nom * 0.87;
-    });
+    const off = lines.find((l) => isGridVoltageOff(l.v ?? 0));
     if ((await streak(c.db, `gv:${c.accountId}:${inv.sn}`, !!off)) < 3 || !off || !(await once(c.db, `gv_alert:${c.accountId}:${inv.sn}`, c.day))) continue;
     await raise(
       c,
@@ -208,7 +197,7 @@ async function monthly(c: Ctx) {
   // sem histórico dos meses anteriores (usina nova) ainda não há comparação justa
   if (!cur?.avg || !base?.avg || cur.n < 10 || base.n < 14) return;
   await kvSet(c.db, key, ym);
-  const drop = (1 - cur.avg / base.avg) * 100;
+  const drop = dropPercent(cur.avg, base.avg);
   if (drop < rules.monthlyPct) return;
   await raise(
     c,
@@ -237,7 +226,7 @@ export async function runRules(db: Db, who: Who, settings: Settings, plantId: nu
     try {
       await run();
     } catch (e) {
-      console.error(`regra "${label}" falhou:`, e);
+      logger.error({ err: e, rule: label, plantId }, "regra falhou");
     }
   }
 }

@@ -1,12 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { flagEnabled, isMcpPath } from "@/lib/flags";
 import { readSession, SESSION_COOKIE } from "@/lib/session";
 
-/** Endpoints chamados pelo app de IA, sem cookie: têm a própria autenticação (token Bearer / PKCE). /oauth/authorize fica protegido. */
-const OPEN = [/^\/mcp$/, /^\/\.well-known\//, /^\/oauth\/(register|token)$/];
+/**
+ * Rotas que respondem sozinhas a quem não está logado, em vez de redirecionar para /login:
+ * - endpoints do app de IA (token Bearer / PKCE); /oauth/authorize fica protegido;
+ * - API REST: o handler confere a sessão e responde 401 em JSON;
+ * - /api/health e /api/metrics: públicos para o monitoramento (sem dados de usina).
+ */
+const OPEN = [/^\/mcp$/, /^\/\.well-known\//, /^\/oauth\/(register|token)$/, /^\/api\/(usinas\/[^/]+\/resumo|alertas)$/, /^\/api\/(health|metrics)$/];
 
 /** Exige login (conta Solplanet ou Livoltek) em todas as páginas, exceto /login e os endpoints do MCP. */
 export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
+  // feature flag FEATURE_MCP desligada: o MCP, o OAuth e a página "Conectar IA" somem (404)
+  if (isMcpPath(pathname) && !flagEnabled("mcp")) return new NextResponse("Não encontrado", { status: 404 });
   if (OPEN.some((r) => r.test(pathname))) return NextResponse.next();
   const session = readSession(req.cookies.get(SESSION_COOKIE)?.value);
 

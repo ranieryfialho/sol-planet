@@ -1,0 +1,71 @@
+# Ambiente de STAGING (homologação), na mesma VPS da produção mas totalmente separado dela.
+# Autocontido: Postgres próprio e dados SIMULADOS (o seed apaga e recria a usina demo a cada deploy).
+# Nenhuma credencial real: sem worker de coleta, sem WhatsApp, sem acesso ao banco de produção.
+#
+#   docker compose -p solar-staging -f docker-compose.staging.yml up -d --build
+#
+# O deploy (.github/workflows/deploy.yml) cria o ~/solar-staging/.env na primeira vez, com um AUTH_SECRET
+# aleatório e WEB_PORT=3011. Ver docs/deploy.md.
+
+x-env: &env
+  DATABASE_URL: postgres://solar:solar@postgres:5432/solar
+  AUTH_SECRET: ${AUTH_SECRET:?defina AUTH_SECRET no .env do staging}
+  TZ: America/Sao_Paulo
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  # a mesma flag da produção: dá para validar o desligamento do MCP aqui antes de aplicá-lo lá
+  FEATURE_MCP: ${FEATURE_MCP:-true}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: solar
+      POSTGRES_PASSWORD: solar
+      POSTGRES_DB: solar
+    volumes:
+      - pg_staging:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U solar -d solar"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  seed:
+    build: { context: ., target: worker }
+    environment: *env
+    command: ["./node_modules/.bin/tsx", "src/seed-demo.ts"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  web:
+    build: { context: ., target: web }
+    # nome fixo: é o endereço que o Nginx Proxy Manager usa (http://solar-staging-web:3000), como na produção (solar-web)
+    container_name: solar-staging-web
+    restart: unless-stopped
+    environment:
+      <<: *env
+      SERVICE_NAME: web-staging
+    # a porta do host é só para o health do deploy (127.0.0.1); o proxy chega pela rede, na porta 3000 do contêiner
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-3011}:3000"
+    # só o web entra na rede do proxy; o Postgres do staging fica isolado na rede do próprio compose
+    networks: [default, proxy]
+    depends_on:
+      seed: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+volumes:
+  pg_staging:
+
+networks:
+  # rede onde o Nginx Proxy Manager já está (a mesma em que o solar-web da produção é alcançado)
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:-wp-network}

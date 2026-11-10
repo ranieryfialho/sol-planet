@@ -10,8 +10,8 @@ if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 const config: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: root,
-  transpilePackages: ["@sol/db", "@sol/solplanet"],
-  serverExternalPackages: ["postgres"],
+  transpilePackages: ["@sol/db", "@sol/solplanet", "@sol/observability"],
+  serverExternalPackages: ["postgres", "pino", "prom-client"],
 };
 
 export default config;

@@ -10,3 +10,6 @@ next-env.d.ts
 
 # respostas da sonda da Livoltek (dados pessoais)
 probe-out.json
+
+# relatório de cobertura dos testes
+coverage/

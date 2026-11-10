@@ -10,6 +10,8 @@ COPY apps/worker/package.json apps/worker/
 COPY packages/db/package.json packages/db/
 COPY packages/solplanet/package.json packages/solplanet/
 COPY packages/whatsapp/package.json packages/whatsapp/
+COPY packages/livoltek/package.json packages/livoltek/
+COPY packages/observability/package.json packages/observability/
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS src

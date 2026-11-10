@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 import { resolveToday, type Carry } from "../apps/worker/src/rollover";
 
 const D1 = "2026-11-01";

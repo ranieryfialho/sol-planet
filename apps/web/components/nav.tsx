@@ -4,18 +4,23 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./ui";
 
-export const NAV = [
+type NavItem = { href: string; label: string; icon: string; desktopIcon: string; desktopOnly?: boolean; flag?: string };
+
+export const NAV: NavItem[] = [
   { href: "/", label: "Início", icon: "sunny", desktopIcon: "home" },
   { href: "/historico", label: "Histórico", icon: "bar_chart", desktopIcon: "calendar_month" },
   { href: "/alertas", label: "Alertas", icon: "notifications_active", desktopIcon: "notifications" },
   { href: "/inversor", label: "Inversor", icon: "bolt", desktopIcon: "bolt", desktopOnly: true },
-  { href: "/conectar-ia", label: "IA", icon: "smart_toy", desktopIcon: "smart_toy" },
+  { href: "/conectar-ia", label: "IA", icon: "smart_toy", desktopIcon: "smart_toy", flag: "mcp" },
   { href: "/ajustes", label: "Ajustes", icon: "tune", desktopIcon: "tune" },
 ];
 
 const isActive = (path: string, href: string) => (href === "/" ? path === "/" : path.startsWith(href));
 
-export function Sidebar({ footer }: { footer?: React.ReactNode }) {
+/** `off` lista as flags desligadas: o item de menu que depende delas some (o servidor decide e passa por prop). */
+const visible = (off: string[] = []) => NAV.filter((n) => !(n.flag && off.includes(n.flag)));
+
+export function Sidebar({ footer, off }: { footer?: React.ReactNode; off?: string[] }) {
   const path = usePathname();
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-surface px-5 py-6 shadow-card lg:flex">
@@ -29,7 +34,7 @@ export function Sidebar({ footer }: { footer?: React.ReactNode }) {
         </span>
       </Link>
       <nav className="flex flex-col gap-1">
-        {NAV.map((n) => {
+        {visible(off).map((n) => {
           const active = isActive(path, n.href);
           return (
             <Link
@@ -50,12 +55,12 @@ export function Sidebar({ footer }: { footer?: React.ReactNode }) {
   );
 }
 
-export function BottomNav() {
+export function BottomNav({ off }: { off?: string[] }) {
   const path = usePathname();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 bg-surface/90 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_24px_rgba(27,49,77,0.06)] backdrop-blur-xl lg:hidden">
       <div className="flex h-20 items-center justify-around px-4">
-        {NAV.filter((n) => !n.desktopOnly).map((n) => {
+        {visible(off).filter((n) => !n.desktopOnly).map((n) => {
           const active = isActive(path, n.href);
           return (
             <Link
