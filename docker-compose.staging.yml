@@ -26,7 +26,9 @@ services:
     volumes:
       - pg_staging:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U solar -d solar"]
+      # -h 127.0.0.1 (TCP): na 1ª subida, o Postgres inicializa num servidor temporário que só escuta no socket local;
+      # sem o TCP, o pg_isready passava nessa fase e o seed caía com ECONNREFUSED quando o servidor reiniciava
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U solar -d solar"]
       interval: 2s
       timeout: 3s
       retries: 30
