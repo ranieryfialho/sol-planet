@@ -159,6 +159,14 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 - **Acesso do avaliador.** A IA propôs criar uma nova flag de login demo, e você aprovou. Antes de escrever código, ela leu o fluxo de login e percebeu que ele **já aceita** uma conta conhecida com a senha guardada, sem chamar a Solplanet. Provou isso com um navegador real, no compose local e no staging público: `demo@solar.local` / `demo-sem-coleta` chega ao dashboard, e senha errada volta ao login com erro. **Nenhum código foi necessário**; o que estava errado era o README, que afirmava o contrário, e foi corrigido. A flag e o ADR 0003 propostos foram descartados por desnecessários.
 - **Defeito encontrado no teste.** Na subida do zero (volume novo), o `seed` falhou uma vez com `ECONNREFUSED`: o `pg_isready` passava enquanto o Postgres ainda inicializava num servidor temporário. O mesmo healthcheck existia no `docker-compose.local.yml`, o caminho do avaliador. Foi corrigido nos dois compose, usando TCP (`-h 127.0.0.1`), e validado com 4 subidas do zero seguidas.
 
+### 19. Teste de desempenho no deploy do staging
+
+**Prompt:** "Retome o passo de k6 no deploy do staging: depois de cada deploy, rodar o smoke test contra a URL pública e registrar o p95 medido pela rede."
+
+**Resultado:** a IA implementou um job `desempenho` em `deploy.yml`, que roda o `k6/smoke.js` na URL pública do staging depois do deploy, escreve o p95, a mediana, o p99 e os checks no resumo da execução e guarda o JSON como artefato. O job fica vermelho se o SLO não for cumprido, mas não bloqueia nada, já que a produção é manual. Para o k6 assinar a sessão demo, o deploy passou a gravar no `.env` do staging um `AUTH_SECRET` vindo de um secret do GitHub (`STAGING_AUTH_SECRET`). Sem o secret, o job avisa e é pulado, então o merge não quebra o deploy. O formato do resumo do k6 e o trecho que o formata foram testados localmente.
+
+**Limite encontrado:** a IA tentou criar o secret pelo `gh`, e o Claude Code bloqueou a escrita de credencial no repositório. Ela não contornou e devolveu o passo: **você cria o secret** em Settings → Environments → staging. O resultado medido **ainda não está registrado** em `docs/desempenho.md`; entra depois da primeira execução real, para o documento só afirmar números medidos.
+
 ## Sugestões da IA × decisões
 
 | Tema                             | Sugestão da IA                                                                                                   | Decisão                                                                                                                                             |
@@ -176,6 +184,7 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 | Proxy do staging                 | Mesmo padrão da produção (nome do contêiner + porta, pela rede do NPM)                                        | ✅ Compose ajustado e testado; rede `wp-network` ainda a confirmar na VPS                                                                          |
 | Acesso do avaliador | Nova flag `FEATURE_DEMO_LOGIN` (login demo só no staging) | ❌ Descartada por desnecessária: o login já aceita a conta demo (provado em teste); só o README estava errado |
 | Healthcheck do Postgres | `pg_isready` por socket | 🔄 Trocado por TCP nos dois compose, após o seed falhar na 1ª subida |
+| k6 no deploy do staging | Job `desempenho` com o secret `STAGING_AUTH_SECRET` | 🔄 Código pronto; falta você criar o secret e a 1ª execução real para registrar o p95 |
 | Estrutura do CI                  | Jobs paralelos + `gates` + composite actions, como no medguia                                                   | ✅ Aplicado                                                                                                                                          |
 | Aprovação da produção        | Aprovador obrigatório no Environment `production`                                                              | 🔄 O GitHub recusou (422): exige plano pago em repositório privado. **Decisão:** produção só por acionamento manual, a partir da `main` |
 | Bypass na proteção da `main` | Sem exceção, nem para o admin                                                                                   | ✅ Aceito                                                                                                                                            |
