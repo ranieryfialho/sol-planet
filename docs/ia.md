@@ -169,6 +169,18 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 
 **Correção do PR:** você apontou um erro no texto do PR, que tinha o título "Antes do merge" (parecendo obrigatório) e dizia "nada quebra sem o secret", duas coisas contraditórias. Além disso, o "nada quebra" nunca tinha sido testado. A descrição foi reescrita só com o que foi verificado.
 
+### 20. Swagger e verificação da API no staging
+
+**Prompt:** "Quais rotas de teste já conseguimos entregar direto no staging, incluindo o Swagger? Você faria só o Swagger? Os outros testes ficaram de fora?"
+
+**Resultado:** antes de responder, a IA testou cada rota do contrato no staging real, inclusive as que exigem login (entrando com a conta demo num navegador automatizado). Mostrou o que já funcionava, o que não era útil para avaliar (`/api/whatsapp/groups` devolve `[]`, sem Evolution) e a lacuna: **não havia Swagger no staging**. Você perguntou se ela faria só o Swagger. A resposta foi não, e o pedido ganhou três partes:
+
+- **Swagger UI em `/docs`**, com a flag `FEATURE_DOCS` (desligada por padrão, ligada só no staging) e o contrato servido com a origem da requisição como primeiro servidor, para o *Try it out* chamar o próprio ambiente com o cookie do login. Verificado em navegador real: login demo, abrir `/docs`, executar o resumo, resposta 200 com a usina demo. Com a flag desligada, `/docs` responde 404.
+- **`scripts/smoke-api.mjs`**: 11 verificações (saúde, métricas, 401 sem login, resumo 200, 404, 400 e o Swagger) que só fazem chamadas sem gravar dados. Roda no deploy do staging, antes do k6, e na máquina do avaliador. Testado no staging real (11 de 11) e com credencial ausente (as 5 que exigem login ficam "puladas") e ambiente fora do ar (sai com erro). Um teste unitário garante que a sessão que o script assina é aceita pelo `readSession` real do app.
+- **Guia "Como testar o staging"** em `docs/deploy.md`, com cada rota e o resultado esperado.
+
+**Defeitos encontrados só porque a imagem foi construída e testada de verdade:** (1) o `.dockerignore` excluía a pasta `docs` inteira, então o contrato não entrava na imagem e o deploy do staging teria falhado; (2) o contrato declarava só `http://localhost:3000` como servidor, e o *Try it out* iria para o endereço errado. Ambos foram corrigidos antes do PR.
+
 ## Sugestões da IA × decisões
 
 | Tema                             | Sugestão da IA                                                                                                   | Decisão                                                                                                                                             |
@@ -187,6 +199,8 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 | Acesso do avaliador | Nova flag `FEATURE_DEMO_LOGIN` (login demo só no staging) | ❌ Descartada por desnecessária: o login já aceita a conta demo (provado em teste); só o README estava errado |
 | Healthcheck do Postgres | `pg_isready` por socket | 🔄 Trocado por TCP nos dois compose, após o seed falhar na 1ª subida |
 | k6 no deploy do staging | Job `desempenho` com o secret `STAGING_AUTH_SECRET` | ✅ Secret criado por você, execução real provada: p95 de 240,8 ms pela rede (SLO < 300 ms) |
+| Swagger no staging | Rota `/docs` com `FEATURE_DOCS` (em vez de um contêiner swagger-ui com outro subdomínio) | ✅ Aprovado por você; mesma origem, então o *Try it out* envia o cookie |
+| Escopo dos testes no staging | Swagger + verificação automática da API + guia, e não só o Swagger | ✅ Aprovado por você |
 | Estrutura do CI                  | Jobs paralelos + `gates` + composite actions, como no medguia                                                   | ✅ Aplicado                                                                                                                                          |
 | Aprovação da produção        | Aprovador obrigatório no Environment `production`                                                              | 🔄 O GitHub recusou (422): exige plano pago em repositório privado. **Decisão:** produção só por acionamento manual, a partir da `main` |
 | Bypass na proteção da `main` | Sem exceção, nem para o admin                                                                                   | ✅ Aceito                                                                                                                                            |
