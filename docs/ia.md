@@ -138,6 +138,16 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 
 **Decisão sua mantida:** o merge só acontece depois de preparar a VPS (item 3), porque o push na `main` implanta o staging.
 
+### 17. Proxy reverso do staging (item 3)
+
+**Prompt:** "Meu proxy reverso é o Nginx Proxy Manager e eu sigo o padrão nome do contêiner + porta (por exemplo, `solar-web:3000`). Quero manter esse padrão no staging. Como configuramos? (Imagem anexa: o proxy host da produção.)"
+
+**Resultado:** a IA identificou, pela imagem, que o NPM alcança o contêiner pela **rede Docker**, e não pela porta do host, e que o compose de staging não tinha nada disso. Ajustou o `docker-compose.staging.yml`: nome fixo `solar-staging-web`, entrada do `web` na rede externa do proxy (`PROXY_NETWORK`) e porta do host apenas em `127.0.0.1`, para o health do deploy. O Postgres do staging continua só na rede do próprio compose.
+
+**Validação:** simulando o NPM com uma rede compartilhada de teste, `http://solar-staging-web:3000/api/health` respondeu 200 e o Postgres do staging ficou inalcançável por ela. A rede e os contêineres do teste foram removidos.
+
+**Premissa a confirmar na VPS:** o nome padrão da rede é `wp-network`, tirado do `.env.example`. O `docs/deploy.md` traz o comando para conferir o nome real.
+
 ## Sugestões da IA × decisões
 
 | Tema                             | Sugestão da IA                                                                                                   | Decisão                                                                                                                                             |
@@ -152,6 +162,7 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 | Rodadas ao banco no resumo       | Juntar `canSeePlant` e `plants` num `join`                                                                  | ⏸️ Próximo passo: o SLO já está atendido com folga                                                                                              |
 | Autenticação da API            | Bearer via OAuth já existente, para clientes externos                                                            | ⏸️ Mantido o cookie nesta entrega, com o Bearer registrado como evolução                                                                         |
 | Publicação | PR para a `main`, sem merge até a VPS estar pronta | ✅ PR #1 aberto, CI verde |
+| Proxy do staging | Mesmo padrão da produção (nome do contêiner + porta, pela rede do NPM) | ✅ Compose ajustado e testado; rede `wp-network` ainda a confirmar na VPS |
 | Estrutura do CI                  | Jobs paralelos + `gates` + composite actions, como no medguia                                                   | ✅ Aplicado                                                                                                                                          |
 | Aprovação da produção        | Aprovador obrigatório no Environment `production`                                                              | 🔄 O GitHub recusou (422): exige plano pago em repositório privado. **Decisão:** produção só por acionamento manual, a partir da `main` |
 | Bypass na proteção da `main` | Sem exceção, nem para o admin                                                                                   | ✅ Aceito                                                                                                                                            |

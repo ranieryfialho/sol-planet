@@ -9,7 +9,8 @@
 | Compose | [docker-compose.staging.yml](../docker-compose.staging.yml) | [docker-compose.yml](../docker-compose.yml) |
 | Pasta na VPS / projeto compose | `~/solar-staging` / `solar-staging` | `~/solar` / `solar` |
 | Banco | Postgres próprio, volume `pg_staging`, recriado a cada deploy | Postgres existente da VPS (rede `PG_NETWORK`) |
-| Porta (`WEB_PORT`) | 3011 | do `.env` (padrão 3000) |
+| Endereço no proxy reverso | `http://solar-staging-web:3000` | `http://solar-web:3000` |
+| Porta no host (`WEB_PORT`) | 3011, só em `127.0.0.1`, usada pelo health do deploy | do `.env` (padrão 3000) |
 | Worker de coleta e WhatsApp | Não sobe | Sobe |
 | Como sobe | Automático a cada merge na `main` | **Só manual**: *Run workflow* escolhendo `production`, a partir da `main` |
 | `.env` | Criado sozinho no 1º deploy, com `AUTH_SECRET` aleatório | Criado à mão a partir do [.env.example](../.env.example) |
@@ -64,4 +65,10 @@ A `main` é protegida por um *ruleset* do GitHub, sem exceção para ninguém (n
 ## Configuração única no GitHub e na VPS
 
 1. **Environments** (Settings → Environments): criar `staging` e `production`, sem regras (aprovador obrigatório exige plano pago); `production` aceita deploy só da `main`. Os *secrets* `VPS_HOST`, `VPS_PORT`, `VPS_USER` e `VPS_SSH_KEY` já existem no repositório e servem aos dois ambientes.
-2. **Proxy reverso** (nginx/Caddy) do subdomínio de staging apontando para `127.0.0.1:3011`, com HTTPS. A VPS precisa de `docker compose` e `curl`.
+2. **Rede do proxy.** O `solar-staging-web` precisa estar na mesma rede Docker do Nginx Proxy Manager (a mesma em que ele alcança o `solar-web`). O compose usa a rede externa `PROXY_NETWORK` (padrão `wp-network`). Confira o nome certo na VPS e, se for outro, defina `PROXY_NETWORK=<rede>` no `~/solar-staging/.env`:
+   ```bash
+   docker inspect solar-web --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}'
+   ```
+3. **DNS:** um registro do subdomínio de staging apontando para a VPS (ou um curinga já existente).
+4. **Nginx Proxy Manager** → *Add Proxy Host*, igual ao da produção: *Domain Names* = o subdomínio de staging; *Scheme* `http`; *Forward Hostname* `solar-staging-web`; *Forward Port* `3000`; aba SSL com Let's Encrypt e *Force SSL*. Só o `web` entra na rede do proxy. O Postgres do staging fica isolado na rede do próprio compose.
+5. A VPS precisa de `docker compose` e `curl`.

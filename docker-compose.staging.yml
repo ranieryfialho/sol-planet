@@ -41,12 +41,17 @@ services:
 
   web:
     build: { context: ., target: web }
+    # nome fixo: é o endereço que o Nginx Proxy Manager usa (http://solar-staging-web:3000), como na produção (solar-web)
+    container_name: solar-staging-web
     restart: unless-stopped
     environment:
       <<: *env
       SERVICE_NAME: web-staging
+    # a porta do host é só para o health do deploy (127.0.0.1); o proxy chega pela rede, na porta 3000 do contêiner
     ports:
       - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-3011}:3000"
+    # só o web entra na rede do proxy; o Postgres do staging fica isolado na rede do próprio compose
+    networks: [default, proxy]
     depends_on:
       seed: { condition: service_completed_successfully }
     healthcheck:
@@ -58,3 +63,9 @@ services:
 
 volumes:
   pg_staging:
+
+networks:
+  # rede onde o Nginx Proxy Manager já está (a mesma em que o solar-web da produção é alcançado)
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:-wp-network}
