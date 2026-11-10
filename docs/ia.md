@@ -130,6 +130,14 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 
 **Escolha da IA, a rever se quiser:** o CI deixou de rodar em todo push e passou a rodar em PR para a `main`, push na `main` e acionamento manual, como no outro projeto.
 
+### 16. Publicação da branch e abertura do PR
+
+**Prompt:** "Siga para a etapa de publicação: envie a branch `projeto-final-gt4` e abra o pull request para a `main`, mantendo o registro desta etapa no `docs/ia.md` no mesmo padrão. Não faça o merge: o deploy do staging depende da VPS, que ainda não está preparada."
+
+**Resultado:** a IA conferiu o estado local antes de publicar (12 commits à frente da origem e um ajuste de redação seu não commitado no `ia.md`, que entrou como commit próprio, sem alterar o conteúdo). Enviou a branch e abriu o **PR #1** com descrição em duas partes (adaptação à Proposta B e ajustes desta rodada), instruções de teste e um aviso sobre o efeito do merge. Foi a primeira execução real da CI nova: **os 7 checks passaram** (`lint`, `tipos`, `build`, `contratos`, `testes`, `segredos` e `gates`), então as composite actions funcionaram como previsto. O PR ficou aberto e **sem merge**, de propósito.
+
+**Decisão sua mantida:** o merge só acontece depois de preparar a VPS (item 3), porque o push na `main` implanta o staging.
+
 ## Sugestões da IA × decisões
 
 | Tema                             | Sugestão da IA                                                                                                   | Decisão                                                                                                                                             |
@@ -143,6 +151,7 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 | Padrão do M1                    | Núcleo de domínio puro com E/S na borda                                                                         | ✅ [ADR 0001](adr/0001-nucleo-de-dominio-puro.md), com a hexagonal completa descartada                                                                |
 | Rodadas ao banco no resumo       | Juntar `canSeePlant` e `plants` num `join`                                                                  | ⏸️ Próximo passo: o SLO já está atendido com folga                                                                                              |
 | Autenticação da API            | Bearer via OAuth já existente, para clientes externos                                                            | ⏸️ Mantido o cookie nesta entrega, com o Bearer registrado como evolução                                                                         |
+| Publicação | PR para a `main`, sem merge até a VPS estar pronta | ✅ PR #1 aberto, CI verde |
 | Estrutura do CI                  | Jobs paralelos + `gates` + composite actions, como no medguia                                                   | ✅ Aplicado                                                                                                                                          |
 | Aprovação da produção        | Aprovador obrigatório no Environment `production`                                                              | 🔄 O GitHub recusou (422): exige plano pago em repositório privado. **Decisão:** produção só por acionamento manual, a partir da `main` |
 | Bypass na proteção da `main` | Sem exceção, nem para o admin                                                                                   | ✅ Aceito                                                                                                                                            |
