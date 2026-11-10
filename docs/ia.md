@@ -4,7 +4,7 @@
 **Quando:** adaptação do projeto à Proposta B, em 07/11/2026, na branch `projeto-final-gt4`; ajustes posteriores a partir de 10/11/2026 (seção "Ajustes após a primeira entrega").
 **Como trabalhei:** a IA levanta o contexto, propõe e executa; **as decisões são minhas**. Depois do primeiro passo, nenhuma alteração entrou sem plano aprovado, e cada módulo (M1 a M4) virou um commit separado para revisão.
 
-> Os prompts abaixo estão **resumidos e revisados** (ortografia e clareza) a partir da conversa original. A ordem, a intenção e as decisões são as que aconteceram.
+> Os prompts abaixo foram **resumidos, revisados e reescritos para ficar claros e completos** (objetivo, restrições e critério de pronto), e não são transcrições literais da conversa. A ordem, a intenção e as decisões são as que aconteceram.
 
 ## Linha do tempo das interações
 
@@ -80,63 +80,61 @@ Pelo escopo A, faltaria: monólito modular com fronteiras explícitas e volume d
 
 ## Ajustes após a primeira entrega (10/11/2026)
 
-### 9. Lista de ajustes e plano
+Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao nível A, mantendo a entrega como **nível B**. O README diz quais itens do A entraram e quais não.
 
-**Prompt:** "Quero fazer alguns ajustes no projeto: ambientes staging e produção; feature flag e estratégia de deploy; ADR com alternativa descartada; C4 em Mermaid; README descrevendo as features do A que entraram no B; commits semânticos; deixar online para avaliação; bloquear push na main e proteger a branch; validar o `.env.example`. Explique o que vamos mudar e como, seguindo commits semânticos. Segue o documento com as diretrizes do projeto."
+### 9. Pedido dos ajustes e plano
 
-**Resultado:** antes de alterar qualquer coisa, a IA leu a branch `projeto-final-gt4` (README, CI, deploy, compose, ADR, `.env.example`) e comparou com as diretrizes. Apresentou uma tabela de cada item (o que muda e como fazer), uma ordem de execução em commits pequenos e três perguntas em aberto (fluxo de branch, acesso do avaliador e banco/subdomínio de staging na VPS). Nada foi alterado nesta etapa, mantendo o fluxo **plano → aprovação → execução** da interação 2.
+**Prompt:** "Quero aproximar o projeto de práticas do nível A, mantendo a entrega como Proposta B. Itens: (1) ambientes de staging e produção; (2) feature flag e estratégia de deploy; (3) ADR com a alternativa descartada; (4) diagramas C4 de contexto e de contêiner em Mermaid; (5) README documentando com clareza quais recursos do A foram incorporados ao B; (6) commits semânticos; (7) deixar o projeto online para avaliação; (8) bloquear push na `main`; (9) proteger a branch; (10) validar o `.env.example`. Antes de alterar qualquer coisa, explique o que muda em cada item e como pretende fazer, já seguindo commits semânticos. Em anexo, as diretrizes do projeto final."
 
-**Observações da IA que mudaram o enquadramento:**
+**Resultado:** a IA analisou o repositório e comparou com as diretrizes, sem alterar nada. Entregou um plano item a item, com a ordem dos commits e três perguntas em aberto (fluxo de branch, acesso do avaliador e subdomínio de staging). Três observações moldaram o resto do trabalho:
 
-- A maior parte da lista são requisitos do **nível A** (dois ambientes, feature flag, estratégia de deploy, C4). Por isso o README deve dizer que o projeto é "B com itens do A", sem fingir que é A completo.
-- O [ADR 0001](adr/0001-nucleo-de-dominio-puro.md) já traz duas alternativas descartadas. O item não parte do zero: o ADR 0002 registra as decisões novas (flag por variável de ambiente e staging na mesma VPS).
-- Hoje a `main` não tem nenhuma proteção (confirmado pela API do GitHub), e o histórico anterior mistura `M1: ...` com frases soltas. O padrão semântico vale daqui em diante, **sem reescrever** commits já publicados.
+- Quase tudo na lista é requisito do **nível A**, então o README precisa dizer "B com itens do A", sem fingir que é A completo.
+- O ADR 0001 já tinha alternativas descartadas. O ADR novo (0002) cobriria as decisões desta etapa.
+- A `main` estava sem proteção, e o histórico antigo não segue commits semânticos. O padrão vale daqui em diante, **sem reescrever** commits já publicados.
 
-### 10. Registro das interações e o staging online
+### 10. Registro neste documento e dúvida sobre o staging online
 
-**Prompt:** "Essas interações precisam ser validadas no `docs/ia.md`, seguindo o mesmo padrão, para não ficar incoerente. Outro detalhe: na aula não se diz que é estritamente necessário ter ambiente de produção online. Você acha que um staging com banco populado sinteticamente seria interessante para a avaliação?"
+**Prompt:** "Registre estas interações no `docs/ia.md`, no mesmo padrão das anteriores, para o documento continuar coerente. Outra questão: a diretriz não exige ambiente de produção online para a avaliação. Um staging com banco populado sinteticamente agregaria algo à avaliação?"
 
-**Resultado:** esta seção. Sobre o staging, a IA respondeu que **vale como complemento, não como exigência**. A aula pede repositório, README que reproduza a execução local, CI verde, `docs/desempenho.md` e `CONTRIBUTORS.md`, e não pede nada online. O compose local continua sendo o caminho garantido. O staging com dados sintéticos ajuda porque deixa o avaliador ver o dashboard sem conta Solplanet (o seed já gera 400 dias de histórico), cumpre o item "dois ambientes" e permite medir o p95 fora da máquina de desenvolvimento (próximo passo da 8.3). O custo é baixo, porque reaproveita o `seed-demo.ts` e a VPS existente. O risco é expor um serviço público, mas só com dados fictícios.
+**Resultado:** as interações foram registradas aqui. Sobre o staging, a IA respondeu que **vale como complemento, não como exigência**: o caminho garantido continua sendo o compose local. O staging deixa o avaliador ver o dashboard sem conta Solplanet, cumpre o item "dois ambientes" e permite medir o p95 fora da máquina de desenvolvimento. O risco, expor um serviço público, é pequeno, porque os dados seriam fictícios.
 
-**Regra para as próximas entradas:** a cada etapa executada, este documento ganha uma entrada com o prompt resumido, o resultado e a decisão. Decisões ainda não tomadas ficam marcadas como pendentes na tabela abaixo.
+### 11. Execução dos itens independentes
 
-### 11. Aprovação e primeiras entregas
+**Prompt:** "Plano aprovado. Execute os itens que não dependem das minhas respostas, com um commit semântico por item, validando cada um (lint, tipos e testes) antes de commitar."
 
-**Prompt:** "Sim, vamos lá."
+**Resultado:** seis commits: validação do `.env.example` na CI (achou 3 variáveis que o código lia e o exemplo não documentava), diagramas C4, feature flag `FEATURE_MCP`, compose de staging, deploy em dois ambientes e ADR 0002 com `docs/deploy.md`, mais o README com os itens do A.
 
-**Resultado:** com o plano aprovado, a IA executou os itens que não dependiam das perguntas em aberto, um commit semântico por item, rodando lint, typecheck e testes (com Postgres do compose local) antes de cada commit:
+**Erro pego pela verificação:** ao subir o staging localmente, o `next build` falhou por um erro de tipo que a própria IA tinha introduzido em `nav.tsx` e que o `pnpm typecheck` da raiz não cobre. Teria derrubado o próximo deploy. Foi corrigido no mesmo commit, ainda não publicado, e a flag foi testada de ponta a ponta (ligada: `/mcp` responde 401; desligada: `/mcp`, `/oauth/token` e `/conectar-ia` respondem 404 e `/api/health` segue 200).
 
-- `ci(env)`: `scripts/check-env.mjs` confere o `.env.example` contra o código e o compose, e recusa valores com cara de segredo. Ao rodar pela primeira vez, ele achou três variáveis que o código já lia e o exemplo não documentava (`EVOLUTION_INSTANCE`, `READINGS_RETENTION_DAYS`, `DEMO_ACCOUNT_ID`).
-- `docs(c4)`: diagramas de contexto e de contêineres em Mermaid, com as integrações conferidas no código (Solplanet, Livoltek, Evolution, Open-Meteo, mapa).
-- `feat(web)`: flag `FEATURE_MCP`, que desliga o MCP, o OAuth e a página "Conectar IA".
-- `build(compose)`, `ci(deploy)` e `docs(adr)`: staging autocontido, deploy em dois estágios com verificação de saúde e rollback, ADR 0002 e `docs/deploy.md`.
-- `docs(readme)`: tabela dos itens do A incorporados e do que **não** entrou.
+### 12. Proteções do repositório
 
-**Problemas que a verificação pegou:** ao subir o staging localmente para validá-lo, o `next build` da imagem falhou: o commit da flag tinha um erro de tipo em `nav.tsx` que o `pnpm typecheck` da raiz não cobre. Teria quebrado o próximo deploy de produção. Foi corrigido no mesmo commit (ainda não publicado) e a flag foi testada de ponta a ponta no compose de staging (com ela ligada, `/mcp` responde 401; desligada, `/mcp`, `/oauth/token` e `/conectar-ia` respondem 404 e `/api/health` continua 200).
+**Prompt:** "Vamos resolver os itens pendentes um por um, começando pela proteção da `main` e pelos Environments de staging e produção, com a regra de que ninguém faça push direto na `main`."
 
-### 12. Proteções do repositório (item 1 da lista pendente)
-
-**Prompt:** "Calma, vamos por partes. [lista do que faltava]. Vamos resolver 1 por 1."
-
-**Resultado:** a IA consultou o repositório antes de configurar (privado, conta pessoal, você como admin) e testou o que o GitHub aceitava, em vez de presumir:
+**Resultado:** a IA verificou o que o GitHub aceita antes de configurar, em vez de presumir:
 
 - Environment `staging`: criado.
-- Aprovador obrigatório em `production`: **recusado pelo GitHub (422)**, pois exige plano pago em repositório privado. A IA apresentou três alternativas, e a decisão foi **produção só por acionamento manual**, a partir da `main`, com o mesmo botão servindo de rollback.
-- Proteção da `main`: a API aceitou o *ruleset*, mas a IA desconfiou de que o plano gratuito pudesse aceitá-lo sem aplicá-lo. Provou com uma branch descartável: o GitHub recusou a exclusão ("push declined due to repository rule violations"). O ruleset e a branch de teste foram removidos em seguida.
-- Decisão sobre exceções: **sem bypass, nem para o dono**.
+- Aprovador obrigatório em `production`: **o GitHub recusou** (erro 422), porque exige plano pago em repositório privado. Das três alternativas apresentadas, a decisão foi **produção só por acionamento manual**, a partir da `main`, com o mesmo botão servindo de rollback.
+- Proteção da `main`: a API aceitou a regra, mas a IA desconfiou de que o plano gratuito pudesse aceitá-la sem aplicá-la. Provou com uma branch descartável (o GitHub recusou a exclusão) e removeu o teste depois. A regra final não tem exceção, nem para o dono, e o push direto na `main` foi recusado em teste.
 
-### 13. CI granular, no modelo de outro projeto
+### 13. Dúvida: dá para rodar todos os testes contra o projeto online?
 
-**Prompt:** "Antes de irmos para o item 2: temos como fazer o CI ser como está nesse projeto (`scrumboard-medguia/.github/actions`)? De forma granular?"
+**Prompt:** "Todos os testes do projeto podem ser executados contra o ambiente online?"
 
-**Resultado:** a IA leu o `.github` do outro projeto e extraiu o que ele faz de granular: jobs em paralelo por responsabilidade, um job `gates` como único check obrigatório da `main`, composite actions locais e `permissions: contents: read`. Aplicou ao sol-planet:
+**Resultado:** não todos. Os unitários e as análises estáticas rodam no código, não na rede. O **teste de integração apaga dados do banco e nunca deve** apontar para staging ou produção. Só o **k6** aceita uma URL e pode medir o staging. A IA recomendou nunca rodar o k6 em produção e ofereceu um passo de k6 no deploy do staging, ainda **não implementado** (decisão adiada).
 
-- `ci.yml` virou seis jobs em paralelo (`lint`, `tipos`, `build`, `contratos`, `testes`, `segredos`) mais o `gates`.
-- Os passos repetidos foram para duas composite actions: `.github/actions/preparar` (pnpm, Node e dependências) e `.github/actions/deploy-vps` (envio, subida e verificação de saúde), que substituiu o workflow reutilizável.
-- Entrou um job **`build` do Next**, que não existia: foi o `next build` que pegou o erro de tipo da interação 11, e o `typecheck` da raiz não o cobre.
-- O ruleset da `main` passou a exigir só o `gates`, em vez dos dois nomes antigos de job.
+### 14. CI granular, no modelo de outro projeto
 
-**Escolha da IA:** o CI deixou de rodar em *todo* push e passou a rodar em PR para a `main`, push na `main` e acionamento manual, como no outro projeto. Isso evita rodada duplicada no PR, e o acionamento manual permite rodar numa branch antes do PR.
+**Prompt:** "Quero que o CI siga a organização do projeto `scrumboard-medguia` (`.github/actions`): jobs separados e granulares, com ações reutilizáveis."
+
+**Resultado:** a IA leu o `.github` do outro projeto e aplicou o que ele tem de granular: jobs em paralelo por responsabilidade, um job `gates` como único check obrigatório da `main`, composite actions locais e permissões mínimas. O `ci.yml` virou seis jobs (`lint`, `tipos`, `build`, `contratos`, `testes`, `segredos`) mais o `gates`. O passo comum e o deploy viraram as actions `preparar` e `deploy-vps`. Entrou também um job de **build do Next**, que não existia e que teria pego o erro da entrada 11. A regra da `main` passou a exigir só o `gates`.
+
+**Escolha da IA, a rever se quiser:** o CI deixou de rodar em todo push e passou a rodar em PR para a `main`, push na `main` e acionamento manual, como no outro projeto.
+
+### 15. Revisão deste documento
+
+**Prompt:** "O `docs/ia.md` ficou fraco: os prompts parecem soltos e pouco claros. Reescreva-os para que apresentem objetivo, restrições e critério de pronto, sem perder a intenção original, e mantenha o documento enxuto."
+
+**Resultado:** esta versão. Os prompts da seção de ajustes foram reescritos, os resultados encurtados e a nota do início passou a dizer que os prompts são reescritos, e não literais. Entraram também as interações 13 e 14, que ainda não estavam registradas.
 
 ## Sugestões da IA × decisões
 
