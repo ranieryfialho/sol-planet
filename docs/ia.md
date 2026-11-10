@@ -114,6 +114,17 @@ Pelo escopo A, faltaria: monólito modular com fronteiras explícitas e volume d
 
 **Problemas que a verificação pegou:** ao subir o staging localmente para validá-lo, o `next build` da imagem falhou: o commit da flag tinha um erro de tipo em `nav.tsx` que o `pnpm typecheck` da raiz não cobre. Teria quebrado o próximo deploy de produção. Foi corrigido no mesmo commit (ainda não publicado) e a flag foi testada de ponta a ponta no compose de staging (com ela ligada, `/mcp` responde 401; desligada, `/mcp`, `/oauth/token` e `/conectar-ia` respondem 404 e `/api/health` continua 200).
 
+### 12. Proteções do repositório (item 1 da lista pendente)
+
+**Prompt:** "Calma, vamos por partes. [lista do que faltava]. Vamos resolver 1 por 1."
+
+**Resultado:** a IA consultou o repositório antes de configurar (privado, conta pessoal, você como admin) e testou o que o GitHub aceitava, em vez de presumir:
+
+- Environment `staging`: criado.
+- Aprovador obrigatório em `production`: **recusado pelo GitHub (422)**, pois exige plano pago em repositório privado. A IA apresentou três alternativas, e a decisão foi **produção só por acionamento manual**, a partir da `main`, com o mesmo botão servindo de rollback.
+- Proteção da `main`: a API aceitou o *ruleset*, mas a IA desconfiou de que o plano gratuito pudesse aceitá-lo sem aplicá-lo. Provou com uma branch descartável: o GitHub recusou a exclusão ("push declined due to repository rule violations"). O ruleset e a branch de teste foram removidos em seguida.
+- Decisão sobre exceções: **sem bypass, nem para o dono**.
+
 ## Sugestões da IA × decisões
 
 | Tema                       | Sugestão da IA                                        | Decisão                                                                               |
@@ -127,6 +138,8 @@ Pelo escopo A, faltaria: monólito modular com fronteiras explícitas e volume d
 | Padrão do M1              | Núcleo de domínio puro com E/S na borda              | ✅ [ADR 0001](adr/0001-nucleo-de-dominio-puro.md), com a hexagonal completa descartada  |
 | Rodadas ao banco no resumo | Juntar `canSeePlant` e `plants` num `join`       | ⏸️ Próximo passo: o SLO já está atendido com folga                                |
 | Autenticação da API      | Bearer via OAuth já existente, para clientes externos | ⏸️ Mantido o cookie nesta entrega, com o Bearer registrado como evolução           |
+| Aprovação da produção     | Aprovador obrigatório no Environment `production` | 🔄 O GitHub recusou (422): exige plano pago em repositório privado. **Decisão:** produção só por acionamento manual, a partir da `main` |
+| Bypass na proteção da `main` | Sem exceção, nem para o admin | ✅ Aceito |
 | Ajustes pós-entrega        | Plano em 7 passos, começando por `.env.example`, C4, flag e ADR 0002, com a proteção da `main` por último | ✅ Aprovado ("vamos lá"); itens 1 a 5 executados, restam proteção da `main` e staging online |
 | Commits                    | Conventional Commits em português, sem reescrever o histórico publicado | ✅ Adotado daqui em diante |
 | Staging online com seed    | Útil como complemento, não exigido pela aula          | 🔄 Compose e deploy prontos; falta publicar na VPS e decidir o acesso do avaliador |

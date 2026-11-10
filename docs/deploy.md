@@ -11,7 +11,7 @@
 | Banco | Postgres próprio, volume `pg_staging`, recriado a cada deploy | Postgres existente da VPS (rede `PG_NETWORK`) |
 | Porta (`WEB_PORT`) | 3011 | do `.env` (padrão 3000) |
 | Worker de coleta e WhatsApp | Não sobe | Sobe |
-| Aprovação | Automática | Manual (GitHub Environment `production`) |
+| Como sobe | Automático a cada merge na `main` | **Só manual**: *Run workflow* escolhendo `production`, a partir da `main` |
 | `.env` | Criado sozinho no 1º deploy, com `AUTH_SECRET` aleatório | Criado à mão a partir do [.env.example](../.env.example) |
 
 Configuração diferente por ambiente vem **só de variáveis de ambiente**: o código é o mesmo nos dois. Segredos ficam no `.env` da VPS e nos *secrets* do GitHub, nunca no repositório. O [.env.example](../.env.example) é validado contra o código a cada CI (`pnpm lint:env`).
@@ -20,29 +20,30 @@ Configuração diferente por ambiente vem **só de variáveis de ambiente**: o c
 
 ```mermaid
 flowchart LR
-    PR[Pull request] -->|CI verde + revisão| M[merge na main]
-    M --> S[deploy staging]
-    S -->|/api/health ok em até 120 s| A{aprovação manual}
-    A -->|aprovado| P[deploy produção]
+    PR[Pull request] -->|CI verde| M[merge na main]
+    M --> S[deploy automático do staging]
+    S -->|/api/health ok em até 120 s| V[você valida no staging]
+    V -->|Run workflow: production| P[deploy da produção]
     P -->|/api/health ok| F[fim]
     S -. falhou .-> X[job vermelho: produção não é tocada]
     P -. falhou .-> X2[job vermelho + logs: rollback]
 ```
 
-1. Todo código chega à `main` por pull request, com os checks `qualidade` e `segredos` verdes (ver [proteção da branch](#proteção-da-branch)).
-2. O push na `main` dispara [deploy.yml](../.github/workflows/deploy.yml). Mudanças só em `.md` não implantam nada.
-3. O **staging** é implantado primeiro. O deploy só vale se `GET /api/health` responder em até 120 s.
-4. A **produção** espera aprovação no GitHub Environment `production` e repete a mesma verificação de saúde.
+1. Todo código chega à `main` por pull request, com os checks da CI verdes (ver [proteção da branch](#proteção-da-branch)).
+2. O push na `main` dispara [deploy.yml](../.github/workflows/deploy.yml) e implanta o **staging**. Mudanças só em `.md` não implantam nada. O deploy só vale se `GET /api/health` responder em até 120 s.
+3. Depois de conferir o staging, a **produção** é liberada à mão: **Actions → Deploy Solar → Run workflow**, com *Use workflow from* = `main` e `ambiente` = `production`. O workflow recusa produção a partir de qualquer outra branch. Esse clique é a aprovação, e a verificação de saúde se repete.
+
+O GitHub só oferece aprovador obrigatório em Environments para repositórios privados no plano pago. Por isso a aprovação é o acionamento manual, e não uma regra do Environment.
 
 ## Estratégia de implantação: recriação simples com verificação, sem *blue-green*
 
 O `docker compose up -d --build` reconstrói a imagem e recria os contêineres que mudaram. Há alguns segundos de indisponibilidade do dashboard durante a troca, e isso é aceito: é um monitor de uso pessoal, o worker retoma a coleta sozinho no ciclo seguinte e nenhum dado se perde (as leituras ficam no Postgres, que não é recriado).
 
-Por que não *blue-green* ou *canary*: exigiriam duas cópias rodando e um proxy que alterne o tráfego, e o ganho não compensa para este tamanho. A proteção real contra um deploy ruim é o conjunto *staging primeiro + aprovação manual + verificação de saúde*, mais o rollback abaixo.
+Por que não *blue-green* ou *canary*: exigiriam duas cópias rodando e um proxy que alterne o tráfego, e o ganho não compensa para este tamanho. A proteção real contra um deploy ruim é o conjunto *staging primeiro + liberação manual + verificação de saúde*, mais o rollback abaixo.
 
 ## Rollback
 
-Reimplante um commit anterior. Em **Actions → Deploy Solar → Run workflow**, informe em `ref` o SHA (ou tag) da versão boa. O fluxo roda igual (staging, aprovação, produção) com o código antigo. O banco **não** é revertido: antes de voltar a um commit antigo, confira se a migração do commit descartado continua compatível com o código antigo.
+Reimplante um commit anterior. Em **Actions → Deploy Solar → Run workflow**, com `ambiente` = `production` e *Use workflow from* = `main`, informe em `ref` o SHA (ou tag) da versão boa. É o mesmo botão do deploy normal, apontando para o código antigo. O banco **não** é revertido: antes de voltar a um commit antigo, confira se a migração do commit descartado continua compatível com o código antigo.
 
 ## Feature flag
 
@@ -58,9 +59,9 @@ Com ela desligada, `/mcp`, `/oauth/*`, `/.well-known/oauth-*` e `/conectar-ia` r
 
 ## Proteção da branch
 
-A `main` é protegida: sem push direto, só pull request com os checks da CI verdes, sem *force push* e sem exclusão. Como o deploy dispara em push na `main`, isso garante que **só código revisado e testado chega ao staging e à produção**.
+A `main` é protegida por um *ruleset* do GitHub, sem exceção para ninguém (nem para o dono): sem push direto, só pull request com os checks `install, lint, typecheck, OpenAPI e testes` e `varredura de segredos (gitleaks)` verdes, sem *force push* e sem exclusão. Como o deploy dispara em push na `main` e a produção só sobe a partir dela, **só código que passou pela CI chega aos ambientes**.
 
 ## Configuração única no GitHub e na VPS
 
-1. **Environments** (Settings → Environments): criar `staging` (sem regras) e `production` (*Required reviewers*: o próprio dono). Os *secrets* `VPS_HOST`, `VPS_PORT`, `VPS_USER` e `VPS_SSH_KEY` já existem no repositório e servem aos dois ambientes.
+1. **Environments** (Settings → Environments): criar `staging` e `production`, sem regras (aprovador obrigatório exige plano pago); `production` aceita deploy só da `main`. Os *secrets* `VPS_HOST`, `VPS_PORT`, `VPS_USER` e `VPS_SSH_KEY` já existem no repositório e servem aos dois ambientes.
 2. **Proxy reverso** (nginx/Caddy) do subdomínio de staging apontando para `127.0.0.1:3011`, com HTTPS. A VPS precisa de `docker compose` e `curl`.

@@ -185,7 +185,7 @@ O projeto é entregue no **Nível B** (API de um domínio, um fluxo central comp
 | Origem (nível A) | O que foi feito | Evidência |
 |---|---|---|
 | M3: dois ambientes, configuração por ambiente, segredos fora do código | Staging (dados simulados) e produção, com `.env` por ambiente e *secrets* no GitHub Environments | [docker-compose.staging.yml](docker-compose.staging.yml), [deploy.yml](.github/workflows/deploy.yml), [docs/deploy.md](docs/deploy.md) |
-| M3: *feature flag* e estratégia de implantação | Flag `FEATURE_MCP` por variável de ambiente; staging → aprovação → produção, com verificação de saúde e rollback | [apps/web/lib/flags.ts](apps/web/lib/flags.ts), [tests/flags.test.ts](tests/flags.test.ts), [docs/deploy.md](docs/deploy.md) |
+| M3: *feature flag* e estratégia de implantação | Flag `FEATURE_MCP` por variável de ambiente; staging automático, produção por acionamento manual, verificação de saúde e rollback | [apps/web/lib/flags.ts](apps/web/lib/flags.ts), [tests/flags.test.ts](tests/flags.test.ts), [docs/deploy.md](docs/deploy.md) |
 | M4: ADR com a opção preterida | ADR 0002 (flag por env em vez de Unleash/GrowthBook; staging autocontido em vez de cópia da produção). O ADR 0001 também lista as opções descartadas | [ADR 0002](docs/adr/0002-flags-por-ambiente-e-staging-na-vps.md) |
 | M4: modelos C4 de contexto e de contêiner | Dois diagramas em Mermaid | [docs/c4/contexto.md](docs/c4/contexto.md), [docs/c4/containers.md](docs/c4/containers.md) |
 
@@ -196,7 +196,7 @@ Além do escopo, e fora das duas propostas: validação automática do `.env.exa
 ## Contribuindo
 
 - **Commits semânticos** ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)): `tipo(escopo): descrição no imperativo`, em português. Tipos usados: `feat`, `fix`, `docs`, `test`, `ci`, `build`, `chore`, `refactor`. Exemplo: `feat(web): feature flag FEATURE_MCP para o servidor MCP`. O histórico anterior à adaptação não segue o padrão e não foi reescrito.
-- **Branch `main` protegida**: sem push direto, só pull request com os checks `qualidade` e `segredos` verdes. Como o deploy dispara na `main`, só código revisado chega aos ambientes.
+- **Branch `main` protegida**: sem push direto, só pull request com os checks da CI verdes. Como o deploy dispara na `main`, só código revisado chega aos ambientes.
 
 ## Segredos
 

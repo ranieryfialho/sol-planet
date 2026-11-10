@@ -1,8 +1,8 @@
 name: Deploy Solar
 
-# Dois ambientes, em sequência: staging (dados simulados) → produção (exige aprovação no GitHub Environment).
-# Dispara a cada push na main (e só aí, por causa da proteção da branch) ou à mão, informando um commit
-# anterior em `ref`: é assim que se faz o rollback. A estratégia completa está em docs/deploy.md.
+# Dois ambientes. O staging (dados simulados) é implantado a cada push na main. A produção só sobe por
+# acionamento manual ("Run workflow"): o clique é a aprovação e o mesmo botão faz o rollback, informando em
+# `ref` um commit anterior. A estratégia completa está em docs/deploy.md.
 on:
   push:
     branches: [main]
@@ -10,6 +10,11 @@ on:
     paths-ignore: ["**.md"]
   workflow_dispatch:
     inputs:
+      ambiente:
+        description: "Onde implantar"
+        type: choice
+        options: [staging, production]
+        default: staging
       ref:
         description: "Commit, tag ou branch a implantar (vazio = o selecionado em 'Use workflow from'). Para rollback, informe um commit anterior."
         required: false
@@ -21,6 +26,8 @@ concurrency:
 
 jobs:
   staging:
+    # push na main, ou acionamento manual escolhendo staging (aceita qualquer branch, para testar antes do merge)
+    if: github.event_name == 'push' || inputs.ambiente == 'staging'
     uses: ./.github/workflows/_deploy-ambiente.yml
     secrets: inherit
     with:
@@ -32,7 +39,9 @@ jobs:
       ref: ${{ inputs.ref }}
 
   producao:
-    needs: staging
+    # só manual e só a partir da main: uma branch sem revisão nunca chega à produção
+    # (o `ref` livre existe para o rollback para um commit antigo da main)
+    if: github.event_name == 'workflow_dispatch' && inputs.ambiente == 'production' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/_deploy-ambiente.yml
     secrets: inherit
     with:

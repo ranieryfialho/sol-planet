@@ -38,14 +38,14 @@ Como ganhar isso com um desenvolvedor, uma VPS e poucos dias, sem criar um segun
 Escolhidas as **opções 1 e 3**.
 
 - A flag `FEATURE_MCP` (padrão: ligada) desliga o MCP, o OAuth e a página "Conectar IA": as rotas respondem 404 e o item some do menu. Mudar o valor e reiniciar o contêiner basta, sem novo build.
-- O staging é o [docker-compose.staging.yml](../../docker-compose.staging.yml): Postgres próprio, `seed` com a usina demo e `web`. Não tem `worker` de coleta, WhatsApp nem credenciais reais. O deploy segue **staging → produção**, com aprovação manual para produção ([docs/deploy.md](../deploy.md)).
+- O staging é o [docker-compose.staging.yml](../../docker-compose.staging.yml): Postgres próprio, `seed` com a usina demo e `web`. Não tem `worker` de coleta, WhatsApp nem credenciais reais. O deploy implanta o **staging** a cada merge na `main`, e a **produção** só sobe por acionamento manual a partir da `main` ([docs/deploy.md](../deploy.md)).
 
 ### Consequências
 
 - Bom: zero infraestrutura nova. A flag é uma função pura com teste unitário, e a mesma variável vale nos dois ambientes, então dá para validar o desligamento no staging antes de aplicá-lo em produção.
 - Bom: o staging é descartável e seguro. Seus dados são fictícios, então pode ser público para a avaliação sem expor ninguém.
 - Ruim: a flag vale para o ambiente todo e só muda com reinício do contêiner. Não há liberação gradual nem segmentação por usuário, nem painel. Para as flags que o projeto tem hoje (uma), isso é suficiente. Se aparecerem flags por usuário, a opção 2 volta a ser a resposta.
-- Ruim: staging e produção dividem a mesma máquina. Um build pesado no staging pode competir por CPU com a produção. Mitigação: o staging não tem worker, e o build roda antes da aprovação de produção.
+- Ruim: staging e produção dividem a mesma máquina. Um build pesado no staging pode competir por CPU com a produção. Mitigação: o staging não tem worker, e o build do staging roda antes de a produção ser liberada à mão.
 - Ruim: o staging não exercita a coleta real nem o WhatsApp. Esses caminhos continuam validados só em produção.
 
 ## Prós e contras das opções
