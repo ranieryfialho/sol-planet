@@ -7,6 +7,7 @@ inputs:
   porta_padrao: { description: "Usada só se o .env não definir WEB_PORT", required: true }
   ambiente: { description: "staging ou production (staging cria o .env sozinho na 1ª vez)", required: true }
   ref: { description: "Commit, tag ou branch a implantar; vazio = o que já está em checkout", required: false, default: "" }
+  auth_secret: { description: "AUTH_SECRET a gravar no .env da VPS (só staging, para o k6 assinar a mesma sessão); vazio = mantém o do .env", required: false, default: "" }
   host: { required: true }
   porta_ssh: { required: true }
   usuario: { required: true }
@@ -27,12 +28,13 @@ runs:
         PASTA: ${{ inputs.pasta }}
         AMBIENTE: ${{ inputs.ambiente }}
         PORTA: ${{ inputs.porta_padrao }}
+        AUTH_SECRET_NOVO: ${{ inputs.auth_secret }}
       with:
         host: ${{ inputs.host }}
         port: ${{ inputs.porta_ssh }}
         username: ${{ inputs.usuario }}
         key: ${{ inputs.chave }}
-        envs: PASTA,AMBIENTE,PORTA
+        envs: PASTA,AMBIENTE,PORTA,AUTH_SECRET_NOVO
         script: |
           set -e
           mkdir -p ~/$PASTA
@@ -44,6 +46,12 @@ runs:
               echo "ERRO: ~/$PASTA/.env não existe na VPS. Crie-o a partir do .env.example antes do primeiro deploy."
               exit 1
             fi
+          fi
+          # AUTH_SECRET definido pelo GitHub (só staging, dados simulados): o k6 da CI assina a sessão com o mesmo valor
+          if [ -n "$AUTH_SECRET_NOVO" ]; then
+            grep -v '^AUTH_SECRET=' ~/$PASTA/.env > ~/$PASTA/.env.novo || true
+            printf 'AUTH_SECRET=%s\n' "$AUTH_SECRET_NOVO" >> ~/$PASTA/.env.novo
+            mv ~/$PASTA/.env.novo ~/$PASTA/.env
           fi
           # apaga tudo menos o .env (e a senha de apoio do Postgres, se existir)
           find ~/$PASTA -mindepth 1 -maxdepth 1 ! -name .env ! -name .solar_pg_pw -exec rm -rf {} +

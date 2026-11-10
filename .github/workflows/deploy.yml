@@ -46,10 +46,54 @@ jobs:
           compose: docker-compose.staging.yml
           porta_padrao: "3011"
           ref: ${{ inputs.ref }}
+          auth_secret: ${{ secrets.STAGING_AUTH_SECRET }}
           host: ${{ secrets.VPS_HOST }}
           porta_ssh: ${{ secrets.VPS_PORT }}
           usuario: ${{ secrets.VPS_USER }}
           chave: ${{ secrets.VPS_SSH_KEY }}
+
+  # Mede o SLO (p95 < 300 ms) pela rede, na URL pública do staging, logo depois do deploy. Não bloqueia nada:
+  # a produção é manual. O job só sinaliza (vermelho) se o SLO não for cumprido.
+  desempenho:
+    name: desempenho (k6 no staging)
+    needs: staging
+    if: needs.staging.result == 'success'
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 10
+    env:
+      URL_STAGING: https://staging-solar.rafiweb.com.br
+      AUTH_SECRET: ${{ secrets.STAGING_AUTH_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sem o secret STAGING_AUTH_SECRET, o k6 não tem como assinar a sessão
+        if: env.AUTH_SECRET == ''
+        run: |
+          echo "::warning::Secret STAGING_AUTH_SECRET não definido no Environment staging: o teste de desempenho foi pulado."
+
+      - name: Smoke test k6 (p95 pela rede)
+        if: env.AUTH_SECRET != ''
+        run: |
+          mkdir -p k6-out && chmod 777 k6-out
+          set +e
+          docker run --rm -v "$PWD:/work" -e BASE_URL="$URL_STAGING" -e AUTH_SECRET \
+            grafana/k6:1.3.0 run --summary-export=/work/k6-out/resumo.json /work/k6/smoke.js
+          codigo=$?
+          set -e
+          node -e '
+            const m = require("./k6-out/resumo.json").metrics;
+            const d = m["http_req_duration{endpoint:resumo}"], c = m.checks;
+            const f = (n) => n.toFixed(1) + " ms";
+            console.log(`## k6 no staging (${process.env.URL_STAGING})\n`);
+            console.log("| Métrica | Valor |\n|---|---|");
+            console.log(`| p95 | **${f(d["p(95)"])}** (SLO: < 300 ms) |`);
+            console.log(`| mediana | ${f(d.med)} |`);
+            console.log(`| p99 | ${f(d["p(99)"])} |`);
+            console.log(`| máximo | ${f(d.max)} |`);
+            console.log(`| checks | ${(c.passes / (c.passes + c.fails) * 100).toFixed(1)}% |`);
+          ' | tee -a "$GITHUB_STEP_SUMMARY"
+          exit $codigo
 
   producao:
     # só manual e só a partir da main: uma branch sem revisão nunca chega à produção
