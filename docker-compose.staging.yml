@@ -14,6 +14,8 @@ x-env: &env
   LOG_LEVEL: ${LOG_LEVEL:-info}
   # a mesma flag da produção: dá para validar o desligamento do MCP aqui antes de aplicá-lo lá
   FEATURE_MCP: ${FEATURE_MCP:-true}
+  # Swagger UI em /docs: ligado só no staging (o padrão do app é desligado)
+  FEATURE_DOCS: ${FEATURE_DOCS:-true}
 
 services:
   postgres:

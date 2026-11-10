@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { flagEnabled, isMcpPath } from "../apps/web/lib/flags";
+import { flagEnabled, isDocsPath, isMcpPath } from "../apps/web/lib/flags";
 
 test("sem a variável vale o padrão (MCP ligado), para não mudar o ambiente existente", () => {
   assert.equal(flagEnabled("mcp", {}), true);
@@ -24,4 +24,16 @@ test("as rotas do MCP, do OAuth e da página de conexão pertencem à flag; o re
   for (const p of ["/", "/api/health", "/api/usinas/1/resumo", "/historico", "/login"]) {
     assert.equal(isMcpPath(p), false, p);
   }
+});
+
+test("a flag docs nasce DESLIGADA: sem a variável o Swagger não existe (a produção não muda)", () => {
+  assert.equal(flagEnabled("docs", {}), false);
+  assert.equal(flagEnabled("docs", { FEATURE_DOCS: "" }), false);
+  assert.equal(flagEnabled("docs", { FEATURE_DOCS: "true" }), true);
+  assert.equal(flagEnabled("docs", { FEATURE_DOCS: "off" }), false);
+});
+
+test("as rotas do Swagger e do contrato pertencem à flag docs; o resto não", () => {
+  for (const p of ["/docs", "/docs/", "/docs/openapi.yaml"]) assert.equal(isDocsPath(p), true, p);
+  for (const p of ["/", "/api/health", "/docs/outra", "/documentos", "/conectar-ia"]) assert.equal(isDocsPath(p), false, p);
 });

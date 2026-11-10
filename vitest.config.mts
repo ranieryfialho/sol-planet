@@ -24,6 +24,7 @@ export default defineConfig({
         "apps/web/lib/api/**/*.ts",
         "apps/web/lib/session.ts",
         "apps/web/lib/flags.ts",
+        "apps/web/lib/docs.ts",
         "packages/db/src/accounts.ts",
         "packages/observability/src/**/*.ts",
       ],
