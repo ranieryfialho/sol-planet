@@ -27,6 +27,8 @@ export function envNamesInCode(source) {
   const names = new Set();
   for (const m of source.matchAll(/\b(?:process\.)?env\.([A-Z][A-Z0-9_]*)\b/g)) names.add(m[1]);
   for (const m of source.matchAll(/\benv\[\s*["']([A-Z][A-Z0-9_]*)["']\s*\]/g)) names.add(m[1]);
+  // feature flags ficam numa tabela (lib/flags.ts) e não são lidas por env.X
+  for (const m of source.matchAll(/["'](FEATURE_[A-Z0-9_]+)["']/g)) names.add(m[1]);
   return names;
 }
 

@@ -1,5 +1,6 @@
 import { logout } from "@/app/login/actions";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { flagEnabled } from "@/lib/flags";
 import { BottomNav, MobileHeader, Sidebar } from "@/components/nav";
 import { plantCoords } from "@/components/plant-scene";
 import { ThemeSync } from "@/components/theme-sync";
@@ -44,15 +45,16 @@ async function SidebarFooter() {
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const plant = await getCurrentPlant().catch(() => undefined);
+  const off = flagEnabled("mcp") ? [] : ["mcp"];
   const theme = sunState(plant ? plantCoords(plant) : null).isDay ? "light" : "dark";
   return (
     <>
       <ThemeSync theme={theme} />
       <AutoRefresh seconds={30} />
-      <Sidebar footer={<SidebarFooter />} />
+      <Sidebar footer={<SidebarFooter />} off={off} />
       <MobileHeader />
       <main className="mx-auto w-full max-w-[1240px] px-4 pb-28 pt-20 lg:max-w-none lg:pb-12 lg:pl-[calc(15rem+3rem)] lg:pr-12 lg:pt-8">{children}</main>
-      <BottomNav />
+      <BottomNav off={off} />
     </>
   );
 }

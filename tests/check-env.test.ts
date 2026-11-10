@@ -9,6 +9,10 @@ test("acha variáveis lidas por process.env.X, env.X e env['X']", () => {
   assert.deepEqual([...nomes].sort(), ["AUTH_SECRET", "TARIFA_KWH", "TZ"]);
 });
 
+test("acha feature flags declaradas como texto na tabela de flags", () => {
+  assert.deepEqual([...envNamesInCode(`mcp: { env: "FEATURE_MCP", padrao: true }`)], ["FEATURE_MCP"]);
+});
+
 test("acha variáveis interpoladas no compose, com e sem padrão", () => {
   const nomes = envNamesInCompose("ports: ${WEB_PORT:-3000}\nkey: ${EVOLUTION_API_KEY}");
   assert.deepEqual([...nomes].sort(), ["EVOLUTION_API_KEY", "WEB_PORT"]);

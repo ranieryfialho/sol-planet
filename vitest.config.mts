@@ -23,6 +23,7 @@ export default defineConfig({
         "apps/worker/src/rollover.ts",
         "apps/web/lib/api/**/*.ts",
         "apps/web/lib/session.ts",
+        "apps/web/lib/flags.ts",
         "packages/db/src/accounts.ts",
         "packages/observability/src/**/*.ts",
       ],
