@@ -95,14 +95,6 @@ jobs:
           ' | tee -a "$GITHUB_STEP_SUMMARY"
           exit $codigo
 
-      - name: Guardar o resumo do k6
-        if: always() && env.AUTH_SECRET != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: k6-staging
-          path: k6-out/resumo.json
-          if-no-files-found: ignore
-
   producao:
     # só manual e só a partir da main: uma branch sem revisão nunca chega à produção
     # (o `ref` livre existe para o rollback para um commit antigo da main)
