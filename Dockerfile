@@ -27,6 +27,8 @@ COPY --from=web-build --chown=node:node /app/apps/web/.next/standalone ./
 COPY --from=web-build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static
 # o standalone não leva o public (imagens, ícones): copiar à parte
 COPY --from=web-build --chown=node:node /app/apps/web/public ./apps/web/public
+# contrato OpenAPI servido em /docs (FEATURE_DOCS); o standalone não leva a pasta docs
+COPY --from=web-build --chown=node:node /app/docs/openapi.yaml ./docs/openapi.yaml
 USER node
 EXPOSE 3000
 CMD ["node", "apps/web/server.js"]
