@@ -58,15 +58,16 @@ O seed cria uma conta e uma usina simuladas (ver [apps/worker/src/seed-demo.ts](
 | Id da usina | `999001` ("Minha Casa", 5,5 kWp) |
 | `AUTH_SECRET` do compose local | `dev-local-troque-em-producao` (só desenvolvimento) |
 
-**A senha não entra na tela de login.** O login do dashboard confere as credenciais na API real da Solplanet ou da Livoltek, e a conta demo não existe lá; a senha só preenche o campo obrigatório da tabela de contas. A conta demo é usada de duas formas:
+**A senha entra na tela de login.** O login confere primeiro a conta no banco: se ela já existe e a senha é a guardada (cifrada com o `AUTH_SECRET`), entra **sem chamar a API da Solplanet ou da Livoltek**. O seed cria a conta demo assim, então `demo@solar.local` / `demo-sem-coleta` abre o dashboard com a usina simulada, no compose local e no staging ([staging-solar.rafiweb.com.br](https://staging-solar.rafiweb.com.br)). Qualquer outra conta é validada na API real do fornecedor. A conta demo também pode ser usada de outras formas:
 
-1. **Pela API**: com o cookie gerado por `pnpm demo:session`, como nos `curl` acima. O teste de carga (`k6/smoke.js`) faz o mesmo.
-2. **No dashboard, pelo navegador**: o proxy só confere a assinatura do cookie, então basta gravá-lo à mão:
+1. **No navegador (o mais simples)**: abra a tela de login e entre com o login e a senha da tabela acima.
+2. **Pela API**: com o cookie gerado por `pnpm demo:session`, como nos `curl` acima. O teste de carga (`k6/smoke.js`) faz o mesmo.
+3. **No dashboard, gravando o cookie à mão** (só no ambiente local, que usa o `AUTH_SECRET` de desenvolvimento): o proxy só confere a assinatura do cookie.
    1. Rode `pnpm demo:session` e copie o valor impresso.
    2. Abra http://localhost:3000, aperte F12 e vá em Application (Chrome) ou Storage (Firefox), depois Cookies.
    3. Crie o cookie `solar_session` com esse valor (path `/`) e recarregue a página. O dashboard abre com a usina demo.
 
-O cookie vale 30 dias e só funciona com o `AUTH_SECRET` do ambiente que o gerou. Em produção o `AUTH_SECRET` vem do `.env` da VPS, e a conta demo não existe lá.
+A sessão vale 30 dias e só funciona com o `AUTH_SECRET` do ambiente que a gerou. Em produção o `AUTH_SECRET` vem do `.env` da VPS, e a conta demo não existe lá.
 
 ## Como testar
 
