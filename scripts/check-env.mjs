@@ -19,6 +19,12 @@ export const IGNORADAS = {
   LOCAL_WEB_PORT: "só do docker-compose.local.yml",
 };
 
+/**
+ * Scripts de teste com parâmetros PRÓPRIOS (BASE_URL, SESSION_COOKIE...): não são configuração do app e estão documentados
+ * no cabeçalho de cada script. Também ficam de fora os testes que usam nomes de variáveis só como exemplo.
+ */
+const SCRIPTS_PROPRIOS = /(check-env|smoke-api)\.(mjs|test\.ts)$/;
+
 const CODE_EXT = /\.(ts|tsx|mts|mjs|js)$/;
 const SKIP_DIRS = new Set(["node_modules", ".next", ".git", "coverage", "dist"]);
 
@@ -80,7 +86,7 @@ export function check(root) {
   };
   for (const top of ["apps", "packages", "scripts", "tests"]) {
     try {
-      for (const file of walk(join(root, top))) if (CODE_EXT.test(file) && !/check-env\.(mjs|test\.ts)$/.test(file)) note(envNamesInCode(readFileSync(file, "utf8")), file);
+      for (const file of walk(join(root, top))) if (CODE_EXT.test(file) && !SCRIPTS_PROPRIOS.test(file)) note(envNamesInCode(readFileSync(file, "utf8")), file);
     } catch {
       /* pasta inexistente */
     }

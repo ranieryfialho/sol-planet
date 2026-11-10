@@ -5,7 +5,9 @@
 *.xapk
 state.json
 **/__pycache__
-docs
+# docs fora da imagem (tem PDFs grandes), menos o contrato que o web serve em /docs
+docs/*
+!docs/openapi.yaml
 design
 *.pdf
 .git

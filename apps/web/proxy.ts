@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { flagEnabled, isMcpPath } from "@/lib/flags";
+import { flagEnabled, isDocsPath, isMcpPath } from "@/lib/flags";
 import { readSession, SESSION_COOKIE } from "@/lib/session";
 
 /**
@@ -15,6 +15,8 @@ export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   // feature flag FEATURE_MCP desligada: o MCP, o OAuth e a página "Conectar IA" somem (404)
   if (isMcpPath(pathname) && !flagEnabled("mcp")) return new NextResponse("Não encontrado", { status: 404 });
+  // FEATURE_DOCS: o Swagger UI e o contrato são públicos (só descrevem a API); o "Try it out" usa o cookie do login
+  if (isDocsPath(pathname)) return flagEnabled("docs") ? NextResponse.next() : new NextResponse("Não encontrado", { status: 404 });
   if (OPEN.some((r) => r.test(pathname))) return NextResponse.next();
   const session = readSession(req.cookies.get(SESSION_COOKIE)?.value);
 

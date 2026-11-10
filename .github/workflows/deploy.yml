@@ -52,10 +52,10 @@ jobs:
           usuario: ${{ secrets.VPS_USER }}
           chave: ${{ secrets.VPS_SSH_KEY }}
 
-  # Mede o SLO (p95 < 300 ms) pela rede, na URL pública do staging, logo depois do deploy. Não bloqueia nada:
-  # a produção é manual. O job só sinaliza (vermelho) se o SLO não for cumprido.
+  # Logo depois do deploy, confere a API na URL pública do staging (scripts/smoke-api.mjs, sem gravar dados) e mede o
+  # SLO (p95 < 300 ms) com o k6. Não bloqueia nada: a produção é manual. O job só sinaliza (vermelho) se algo falhar.
   desempenho:
-    name: desempenho (k6 no staging)
+    name: verificação do staging (API e k6)
     needs: staging
     if: needs.staging.result == 'success'
     runs-on: ubuntu-latest
@@ -72,8 +72,17 @@ jobs:
         run: |
           echo "::warning::Secret STAGING_AUTH_SECRET não definido no Environment staging: o teste de desempenho foi pulado."
 
-      - name: Smoke test k6 (p95 pela rede)
+      - name: Verificação da API (contrato e Swagger, sem gravar dados)
         if: env.AUTH_SECRET != ''
+        shell: bash
+        env:
+          BASE_URL: ${{ env.URL_STAGING }}
+          CHECK_DOCS: "1"
+        run: node scripts/smoke-api.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Smoke test k6 (p95 pela rede)
+        # roda mesmo se a verificação da API falhou, para uma rodada mostrar as duas coisas
+        if: always() && env.AUTH_SECRET != ''
         run: |
           mkdir -p k6-out && chmod 777 k6-out
           set +e

@@ -8,6 +8,8 @@
 export const FLAGS = {
   /** servidor MCP, OAuth 2.1 e a página "Conectar minha IA" (fora do escopo B, ver README) */
   mcp: { env: "FEATURE_MCP", padrao: true },
+  /** Swagger UI em /docs, com o contrato docs/openapi.yaml. Desligada por padrão: só o staging liga */
+  docs: { env: "FEATURE_DOCS", padrao: false },
 } as const;
 
 export type FlagName = keyof typeof FLAGS;
@@ -26,3 +28,6 @@ export function flagEnabled(name: FlagName, env: Record<string, string | undefin
 export const MCP_PATHS = [/^\/mcp$/, /^\/\.well-known\/oauth-/, /^\/oauth\//, /^\/conectar-ia(\/|$)/];
 
 export const isMcpPath = (pathname: string) => MCP_PATHS.some((r) => r.test(pathname));
+
+/** Rotas da flag `docs` (Swagger UI e o contrato): com ela desligada, respondem 404. */
+export const isDocsPath = (pathname: string) => /^\/docs(\/openapi\.yaml)?\/?$/.test(pathname);

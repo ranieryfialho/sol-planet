@@ -37,9 +37,48 @@ flowchart LR
 
 O GitHub só oferece aprovador obrigatório em Environments para repositórios privados no plano pago. Por isso a aprovação é o acionamento manual, e não uma regra do Environment.
 
+## Como testar o staging
+
+URL: https://staging-solar.rafiweb.com.br. Os dados são simulados e a conta demo é `demo@solar.local` / `demo-sem-coleta` (entra pela tela de login).
+
+### Swagger (o jeito mais simples)
+
+1. Entre em `/login` com a conta demo.
+2. Abra **`/docs`**: o Swagger UI lista as 11 rotas do contrato. O *Try it out* já vem ativado e chama o próprio staging, enviando o cookie do login. Experimente `GET /api/usinas/{id}/resumo` com `id` = `999001`.
+
+O Swagger é a flag `FEATURE_DOCS`: **ligada no staging** pelo compose e **desligada por padrão** (na produção, `/docs` responde 404).
+
+### Rotas e resultado esperado
+
+| Rota | Login? | Esperado |
+|---|---|---|
+| `GET /api/health` | não | 200, `{"status":"ok","banco":"ok",...}` |
+| `GET /api/metrics` | não | 200, formato Prometheus |
+| `GET /.well-known/oauth-protected-resource` | não | 200, com `resource` terminando em `/mcp` |
+| `POST /mcp` (sem token) | não | 401 |
+| `GET /api/usinas/999001/resumo` | **sim** | 200, usina "Minha Casa" |
+| `GET /api/alertas?tipo=offline&limite=5` | **sim** | 200, lista de alertas |
+| `GET /api/usinas/999999999/resumo` | sim | 404 `usina não encontrada` |
+| `GET /api/usinas/abc/resumo` | sim | 400 `id da usina inválido` |
+| `GET /api/alertas?tipo=invalido` | sim | 400 |
+| `GET /api/usinas/999001/resumo` ou `/api/alertas` | **não** | 401 `não autenticado` |
+
+Fora do que se avalia: `GET /api/whatsapp/groups` responde `[]` (o staging não tem Evolution API), e o `POST /oauth/register` grava um cliente OAuth (por isso ficou de fora das verificações automáticas).
+
+### Verificação automática
+
+O mesmo roteiro da tabela roda sozinho depois de cada deploy do staging (job `desempenho`, resumo da execução em *Actions*) e também na sua máquina, sem gravar dados:
+
+```bash
+# com o cookie do navegador (F12 → Application → Cookies → solar_session) depois de entrar com a conta demo
+BASE_URL=https://staging-solar.rafiweb.com.br SESSION_COOKIE=<valor> CHECK_DOCS=1 node scripts/smoke-api.mjs
+```
+
+Sem `SESSION_COOKIE`, as verificações que exigem login aparecem como "pulado". O script sai com código 1 se algo falhar. A latência (k6) é a seção seguinte.
+
 ## Teste de desempenho no staging
 
-Depois de cada deploy do staging, o job `desempenho` roda o [k6/smoke.js](../k6/smoke.js) contra a **URL pública** (`https://staging-solar.rafiweb.com.br`), então a latência medida inclui a rede, o proxy reverso e o HTTPS. O resultado (p95, mediana, p99 e checks) aparece no resumo da execução em *Actions*. O job fica vermelho se o SLO (p95 < 300 ms, menos de 1% de erro) não for cumprido, mas **não bloqueia nada**: a produção só sobe por ação manual.
+Depois da verificação da API, o mesmo job `desempenho` roda o [k6/smoke.js](../k6/smoke.js) contra a **URL pública** (`https://staging-solar.rafiweb.com.br`), então a latência medida inclui a rede, o proxy reverso e o HTTPS. O resultado (p95, mediana, p99 e checks) aparece no resumo da execução em *Actions*. O job fica vermelho se o SLO (p95 < 300 ms, menos de 1% de erro) não for cumprido, mas **não bloqueia nada**: a produção só sobe por ação manual.
 
 O k6 assina a sessão da conta demo com o `AUTH_SECRET` do staging. Por isso o deploy grava no `.env` do staging o valor do *secret* `STAGING_AUTH_SECRET`. Sem esse secret, o job avisa e é pulado.
 

@@ -190,7 +190,7 @@ O projeto é entregue no **Nível B** (API de um domínio, um fluxo central comp
 | M4: ADR com a opção preterida | ADR 0002 (flag por env em vez de Unleash/GrowthBook; staging autocontido em vez de cópia da produção). O ADR 0001 também lista as opções descartadas | [ADR 0002](docs/adr/0002-flags-por-ambiente-e-staging-na-vps.md) |
 | M4: modelos C4 de contexto e de contêiner | Dois diagramas em Mermaid | [docs/c4/contexto.md](docs/c4/contexto.md), [docs/c4/containers.md](docs/c4/containers.md) |
 
-**Staging online:** https://staging-solar.rafiweb.com.br (dados simulados, sem credenciais reais; é o ambiente de homologação descrito em [docs/deploy.md](docs/deploy.md)). A avaliação **não depende dele**: o caminho garantido é o compose local, em [Como rodar](#como-rodar-um-comando).
+**Staging online:** https://staging-solar.rafiweb.com.br (dados simulados, sem credenciais reais; é o ambiente de homologação descrito em [docs/deploy.md](docs/deploy.md)). **Swagger UI em [/docs](https://staging-solar.rafiweb.com.br/docs)** (entre antes com a conta demo para o *Try it out* funcionar) e o guia [Como testar o staging](docs/deploy.md#como-testar-o-staging), com cada rota e o resultado esperado. A avaliação **não depende dele**: o caminho garantido é o compose local, em [Como rodar](#como-rodar-um-comando).
 
 Além do escopo, e fora das duas propostas: validação automática do `.env.example` contra o código na CI (`pnpm lint:env`), commits semânticos e proteção da branch `main` (ver [Contribuindo](#contribuindo)).
 
