@@ -1,7 +1,7 @@
 # Uso de IA
 
 **Ferramenta:** Claude Code (Anthropic), no VS Code.
-**Quando:** adaptação do projeto à Proposta B, em 07/11/2026, na branch `projeto-final-gt4`.
+**Quando:** adaptação do projeto à Proposta B, em 07/11/2026, na branch `projeto-final-gt4`; ajustes posteriores a partir de 10/11/2026 (seção "Ajustes após a primeira entrega").
 **Como trabalhei:** a IA levanta o contexto, propõe e executa; **as decisões são minhas**. Depois do primeiro passo, nenhuma alteração entrou sem plano aprovado, e cada módulo (M1 a M4) virou um commit separado para revisão.
 
 > Os prompts abaixo estão **resumidos e revisados** (ortografia e clareza) a partir da conversa original. A ordem, a intenção e as decisões são as que aconteceram.
@@ -78,6 +78,28 @@ Para o uso atual (o próprio dashboard e testes), é adequado. O cookie é `http
 **8.7. O que falta para esta entrega se aproximar do nível A?**
 Pelo escopo A, faltaria: monólito modular com fronteiras explícitas e volume de 100 mil registros sintéticos; testes de contrato (Pact) e Testcontainers; dois ambientes com GitHub Environments; métricas RED completas com Prometheus e Grafana, um trace com OpenTelemetry e Jaeger; feature flag; diagramas C4; plano de cache e de filas idempotentes; k6 em 3 estágios com relatório antes e depois. Parte da base já existe (deploy contínuo, OAuth, histograma por rota), mas a diferença de escopo é grande. Por isso escolhi o nível B: como diz o próprio escopo, um B bem feito vale mais que um A pela metade.
 
+## Ajustes após a primeira entrega (10/11/2026)
+
+### 9. Lista de ajustes e plano
+
+**Prompt:** "Quero fazer alguns ajustes no projeto: ambientes staging e produção; feature flag e estratégia de deploy; ADR com alternativa descartada; C4 em Mermaid; README descrevendo as features do A que entraram no B; commits semânticos; deixar online para avaliação; bloquear push na main e proteger a branch; validar o `.env.example`. Explique o que vamos mudar e como, seguindo commits semânticos. Segue o documento com as diretrizes do projeto."
+
+**Resultado:** antes de alterar qualquer coisa, a IA leu a branch `projeto-final-gt4` (README, CI, deploy, compose, ADR, `.env.example`) e comparou com as diretrizes. Apresentou uma tabela de cada item (o que muda e como fazer), uma ordem de execução em commits pequenos e três perguntas em aberto (fluxo de branch, acesso do avaliador e banco/subdomínio de staging na VPS). Nada foi alterado nesta etapa, mantendo o fluxo **plano → aprovação → execução** da interação 2.
+
+**Observações da IA que mudaram o enquadramento:**
+
+- A maior parte da lista são requisitos do **nível A** (dois ambientes, feature flag, estratégia de deploy, C4). Por isso o README deve dizer que o projeto é "B com itens do A", sem fingir que é A completo.
+- O [ADR 0001](adr/0001-nucleo-de-dominio-puro.md) já traz duas alternativas descartadas. O item não parte do zero: o ADR 0002 registra as decisões novas (flag por variável de ambiente e staging na mesma VPS).
+- Hoje a `main` não tem nenhuma proteção (confirmado pela API do GitHub), e o histórico anterior mistura `M1: ...` com frases soltas. O padrão semântico vale daqui em diante, **sem reescrever** commits já publicados.
+
+### 10. Registro das interações e o staging online
+
+**Prompt:** "Essas interações precisam ser validadas no `docs/ia.md`, seguindo o mesmo padrão, para não ficar incoerente. Outro detalhe: na aula não se diz que é estritamente necessário ter ambiente de produção online. Você acha que um staging com banco populado sinteticamente seria interessante para a avaliação?"
+
+**Resultado:** esta seção. Sobre o staging, a IA respondeu que **vale como complemento, não como exigência**. A aula pede repositório, README que reproduza a execução local, CI verde, `docs/desempenho.md` e `CONTRIBUTORS.md`, e não pede nada online. O compose local continua sendo o caminho garantido. O staging com dados sintéticos ajuda porque deixa o avaliador ver o dashboard sem conta Solplanet (o seed já gera 400 dias de histórico), cumpre o item "dois ambientes" e permite medir o p95 fora da máquina de desenvolvimento (próximo passo da 8.3). O custo é baixo, porque reaproveita o `seed-demo.ts` e a VPS existente. O risco é expor um serviço público, mas só com dados fictícios.
+
+**Regra para as próximas entradas:** a cada etapa executada, este documento ganha uma entrada com o prompt resumido, o resultado e a decisão. Decisões ainda não tomadas ficam marcadas como pendentes na tabela abaixo.
+
 ## Sugestões da IA × decisões
 
 | Tema                       | Sugestão da IA                                        | Decisão                                                                               |
@@ -91,6 +113,9 @@ Pelo escopo A, faltaria: monólito modular com fronteiras explícitas e volume d
 | Padrão do M1              | Núcleo de domínio puro com E/S na borda              | ✅ [ADR 0001](adr/0001-nucleo-de-dominio-puro.md), com a hexagonal completa descartada  |
 | Rodadas ao banco no resumo | Juntar `canSeePlant` e `plants` num `join`       | ⏸️ Próximo passo: o SLO já está atendido com folga                                |
 | Autenticação da API      | Bearer via OAuth já existente, para clientes externos | ⏸️ Mantido o cookie nesta entrega, com o Bearer registrado como evolução           |
+| Ajustes pós-entrega        | Plano em 7 passos, começando por `.env.example`, C4, flag e ADR 0002, com a proteção da `main` por último | ⏸️ Pendente de aprovação e das 3 perguntas em aberto |
+| Commits                    | Conventional Commits em português, sem reescrever o histórico publicado | ✅ Adotado daqui em diante |
+| Staging online com seed    | Útil como complemento, não exigido pela aula          | ⏸️ Pendente: depende do acesso do avaliador e da VPS |
 
 ## Problemas encontrados no caminho
 
