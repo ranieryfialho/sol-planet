@@ -42,7 +42,7 @@ Por que não *blue-green* ou *canary*: exigiriam duas cópias rodando e um proxy
 
 ## Rollback
 
-Reimplante um commit anterior. Em **Actions → Deploy Solar → Run workflow**, informe em `ref` o SHA (ou tag) da versão boa. O fluxo roda igual (staging, aprovação, produção) com o código antigo. O banco não é revertido: as migrações do projeto são idempotentes e só acrescentam.
+Reimplante um commit anterior. Em **Actions → Deploy Solar → Run workflow**, informe em `ref` o SHA (ou tag) da versão boa. O fluxo roda igual (staging, aprovação, produção) com o código antigo. O banco **não** é revertido: antes de voltar a um commit antigo, confira se a migração do commit descartado continua compatível com o código antigo.
 
 ## Feature flag
 

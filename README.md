@@ -1,4 +1,4 @@
-**Nível: B** · Projeto Final — Geração Tech 4.0 · Full Cycle (Módulo 4)
+**Nível: B, com itens do A** · Projeto Final — Geração Tech 4.0 · Full Cycle (Módulo 4)
 
 # sol-planet
 
@@ -167,7 +167,7 @@ Get-Content k6/smoke.js | docker run --rm -i -p 5665:5665 -e K6_WEB_DASHBOARD=tr
 | M2 | Um teste de integração | [tests/api.int.test.ts](tests/api.int.test.ts): rotas reais do Next + Postgres real + Supertest |
 | M2 | Cobertura mínima declarada e cumprida | `thresholds` em [vitest.config.mts](vitest.config.mts). A CI falha abaixo do mínimo. |
 | M3 | CI verde com install, lint e test | [.github/workflows/ci.yml](.github/workflows/ci.yml): install, lint, typecheck, Spectral, testes com cobertura e gitleaks |
-| M3 | `.env.example` no repo, segredos fora | [.env.example](.env.example) sem valores reais, `.env` no [.gitignore](.gitignore), gitleaks no histórico completo na CI (ver [Segredos](#segredos)) |
+| M3 | `.env.example` no repo, segredos fora | [.env.example](.env.example) sem valores reais e validado contra o código na CI (`pnpm lint:env`), `.env` no [.gitignore](.gitignore), gitleaks no histórico completo na CI (ver [Segredos](#segredos)) |
 | M3 | Logs estruturados | pino em JSON, uma linha por requisição e por evento do worker: [packages/observability](packages/observability/src/index.ts) |
 | M3 | Uma métrica | `http_request_duration_seconds` (histograma por rota e status) em `GET /api/metrics` |
 | M3 | Um SLO simples | p95 < 300 ms e menos de 1% de erro em `/api/usinas/{id}/resumo`: [docs/desempenho.md](docs/desempenho.md) |
@@ -177,6 +177,26 @@ Get-Content k6/smoke.js | docker run --rm -i -p 5665:5665 -e K6_WEB_DASHBOARD=tr
 | Entrega | `CONTRIBUTORS.md` e uso de IA | [CONTRIBUTORS.md](CONTRIBUTORS.md), [docs/ia.md](docs/ia.md) |
 
 **Além do escopo B** (já existia antes da adaptação e não faz parte do que é avaliado): dashboard com cena 3D, alertas e relatórios no WhatsApp (Evolution API), servidor MCP com OAuth 2.1 para apps de IA, coletor Livoltek e deploy contínuo na VPS ([deploy.yml](.github/workflows/deploy.yml)).
+
+## Itens do Nível A incorporados
+
+O projeto é entregue no **Nível B** (API de um domínio, um fluxo central completo). Por já ser um sistema em produção, alguns requisitos que o escopo reserva ao **Nível A** foram adicionados. A tabela diz o que entrou e o que **não** entrou, para a avaliação não confundir um com o outro.
+
+| Origem (nível A) | O que foi feito | Evidência |
+|---|---|---|
+| M3: dois ambientes, configuração por ambiente, segredos fora do código | Staging (dados simulados) e produção, com `.env` por ambiente e *secrets* no GitHub Environments | [docker-compose.staging.yml](docker-compose.staging.yml), [deploy.yml](.github/workflows/deploy.yml), [docs/deploy.md](docs/deploy.md) |
+| M3: *feature flag* e estratégia de implantação | Flag `FEATURE_MCP` por variável de ambiente; staging → aprovação → produção, com verificação de saúde e rollback | [apps/web/lib/flags.ts](apps/web/lib/flags.ts), [tests/flags.test.ts](tests/flags.test.ts), [docs/deploy.md](docs/deploy.md) |
+| M4: ADR com a opção preterida | ADR 0002 (flag por env em vez de Unleash/GrowthBook; staging autocontido em vez de cópia da produção). O ADR 0001 também lista as opções descartadas | [ADR 0002](docs/adr/0002-flags-por-ambiente-e-staging-na-vps.md) |
+| M4: modelos C4 de contexto e de contêiner | Dois diagramas em Mermaid | [docs/c4/contexto.md](docs/c4/contexto.md), [docs/c4/containers.md](docs/c4/containers.md) |
+
+Além do escopo, e fora das duas propostas: validação automática do `.env.example` contra o código na CI (`pnpm lint:env`), commits semânticos e proteção da branch `main` (ver [Contribuindo](#contribuindo)).
+
+**Não implementado do nível A** (continua só no B): monólito modular com módulos catálogo/pedidos/pagamentos e 100 mil registros sintéticos, testes de contrato (Pact) e Testcontainers, métricas RED completas com Prometheus/Grafana, rastreamento com OpenTelemetry/Jaeger, cache com tolerância a falhas e fila idempotente, e o k6 em três estágios com comparação antes/depois. O smoke test com p95 medido ([docs/desempenho.md](docs/desempenho.md)) é o do B.
+
+## Contribuindo
+
+- **Commits semânticos** ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)): `tipo(escopo): descrição no imperativo`, em português. Tipos usados: `feat`, `fix`, `docs`, `test`, `ci`, `build`, `chore`, `refactor`. Exemplo: `feat(web): feature flag FEATURE_MCP para o servidor MCP`. O histórico anterior à adaptação não segue o padrão e não foi reescrito.
+- **Branch `main` protegida**: sem push direto, só pull request com os checks `qualidade` e `segredos` verdes. Como o deploy dispara na `main`, só código revisado chega aos ambientes.
 
 ## Segredos
 
@@ -194,11 +214,12 @@ packages/observability logs (pino), métrica (prom-client) e health
 packages/solplanet     cliente da API Solplanet (assinatura Alibaba API Gateway)
 packages/livoltek      cliente da API Livoltek
 packages/whatsapp      cliente da Evolution API
-docs/                  openapi.yaml, adr/, desempenho.md, ia.md
+docs/                  openapi.yaml, adr/, c4/, deploy.md, desempenho.md, ia.md
 k6/                    smoke test
 tests/                 Vitest (unitários + integração)
 docker-compose.local.yml  avaliação/local: um comando, sem credenciais
 docker-compose.yml        produção na VPS (Postgres existente)
+docker-compose.staging.yml  staging: Postgres próprio e dados simulados
 ```
 
 ---
