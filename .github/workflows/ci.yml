@@ -1,18 +1,64 @@
 name: CI
 
-# Roda em todo push e pull request. O deploy (deploy.yml) é separado e só dispara na main.
+# Pull requests para a main, pushes na main e acionamento manual (para rodar em qualquer branch).
 on:
-  push:
   pull_request:
+    branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
 
+# Um push novo no mesmo PR cancela a rodada anterior, que já está obsoleta.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
+# Cada verificação é um job próprio e todos rodam AO MESMO TEMPO, cada um na sua máquina: uma falha aponta
+# exatamente o que quebrou, e a rodada mostra todas as falhas de uma vez. O `gates` no fim é o ÚNICO check
+# obrigatório da regra da `main` (nome fixo): só passa se todos os outros passaram.
+# O passo comum (pnpm, Node e dependências) fica em .github/actions/preparar.
 jobs:
-  qualidade:
-    name: install, lint, typecheck, OpenAPI e testes
+  lint:
+    name: lint (ESLint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preparar
+      - run: pnpm lint
+
+  tipos:
+    name: tipos (TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preparar
+      - run: pnpm typecheck
+
+  build:
+    name: build (Next.js)
+    # o typecheck da raiz não cobre o que o `next build` confere (já deixou passar um erro de tipo em nav.tsx)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preparar
+      - run: pnpm --filter @sol/web build
+
+  contratos:
+    name: contratos (OpenAPI e .env.example)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preparar
+      - name: Lint do contrato OpenAPI (Spectral)
+        run: pnpm lint:openapi
+      - name: Valida o .env.example contra o código e o compose
+        run: pnpm lint:env
+
+  testes:
+    name: testes e cobertura mínima
     runs-on: ubuntu-latest
     services:
       # banco só dos testes de integração (nome *_test: o teste apaga os dados)
@@ -34,32 +80,9 @@ jobs:
       LOG_LEVEL: warn
     steps:
       - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
-
-      - name: Install
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Valida o .env.example contra o código
-        run: pnpm lint:env
-
-      - name: Lint do contrato OpenAPI (Spectral)
-        run: pnpm lint:openapi
-
+      - uses: ./.github/actions/preparar
       - name: Testes (unitários + integração) com cobertura mínima
         run: pnpm test:coverage
-
       - name: Resumo da cobertura
         if: always()
         run: |
@@ -68,7 +91,7 @@ jobs:
           fi
 
   segredos:
-    name: varredura de segredos (gitleaks)
+    name: segredos (gitleaks)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -76,3 +99,19 @@ jobs:
           fetch-depth: 0 # histórico completo: segredo apagado depois continua no git
       - name: Gitleaks
         run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.28.0 git /repo --redact --no-banner -v
+
+  # Check obrigatório da regra da `main` (contexto "gates"): resume os jobs acima.
+  gates:
+    name: gates
+    if: always()
+    needs: [lint, tipos, build, contratos, testes, segredos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conferir o resultado dos jobs
+        env:
+          RESULTADOS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "lint, tipos, build, contratos, testes, segredos: $RESULTADOS"
+          for r in $RESULTADOS; do
+            [ "$r" = "success" ] || { echo "Algum job não passou."; exit 1; }
+          done

@@ -24,30 +24,53 @@ concurrency:
   group: deploy-solar
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   staging:
     # push na main, ou acionamento manual escolhendo staging (aceita qualquer branch, para testar antes do merge)
     if: github.event_name == 'push' || inputs.ambiente == 'staging'
-    uses: ./.github/workflows/_deploy-ambiente.yml
-    secrets: inherit
-    with:
-      ambiente: staging
-      pasta: solar-staging
-      projeto: solar-staging
-      compose: docker-compose.staging.yml
-      porta_padrao: "3011"
-      ref: ${{ inputs.ref }}
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 20
+    steps:
+      - name: Checkout (a ação de deploy vem daqui; o ref pedido é tratado dentro dela)
+        uses: actions/checkout@v4
+      - name: Deploy no staging
+        uses: ./.github/actions/deploy-vps
+        with:
+          ambiente: staging
+          pasta: solar-staging
+          projeto: solar-staging
+          compose: docker-compose.staging.yml
+          porta_padrao: "3011"
+          ref: ${{ inputs.ref }}
+          host: ${{ secrets.VPS_HOST }}
+          porta_ssh: ${{ secrets.VPS_PORT }}
+          usuario: ${{ secrets.VPS_USER }}
+          chave: ${{ secrets.VPS_SSH_KEY }}
 
   producao:
     # só manual e só a partir da main: uma branch sem revisão nunca chega à produção
     # (o `ref` livre existe para o rollback para um commit antigo da main)
     if: github.event_name == 'workflow_dispatch' && inputs.ambiente == 'production' && github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/_deploy-ambiente.yml
-    secrets: inherit
-    with:
-      ambiente: production
-      pasta: solar
-      projeto: solar
-      compose: docker-compose.yml
-      porta_padrao: "3000"
-      ref: ${{ inputs.ref }}
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    steps:
+      - name: Checkout (a ação de deploy vem daqui; o ref pedido é tratado dentro dela)
+        uses: actions/checkout@v4
+      - name: Deploy na produção
+        uses: ./.github/actions/deploy-vps
+        with:
+          ambiente: production
+          pasta: solar
+          projeto: solar
+          compose: docker-compose.yml
+          porta_padrao: "3000"
+          ref: ${{ inputs.ref }}
+          host: ${{ secrets.VPS_HOST }}
+          porta_ssh: ${{ secrets.VPS_PORT }}
+          usuario: ${{ secrets.VPS_USER }}
+          chave: ${{ secrets.VPS_SSH_KEY }}

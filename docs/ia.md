@@ -125,6 +125,19 @@ Pelo escopo A, faltaria: monólito modular com fronteiras explícitas e volume d
 - Proteção da `main`: a API aceitou o *ruleset*, mas a IA desconfiou de que o plano gratuito pudesse aceitá-lo sem aplicá-lo. Provou com uma branch descartável: o GitHub recusou a exclusão ("push declined due to repository rule violations"). O ruleset e a branch de teste foram removidos em seguida.
 - Decisão sobre exceções: **sem bypass, nem para o dono**.
 
+### 13. CI granular, no modelo de outro projeto
+
+**Prompt:** "Antes de irmos para o item 2: temos como fazer o CI ser como está nesse projeto (`scrumboard-medguia/.github/actions`)? De forma granular?"
+
+**Resultado:** a IA leu o `.github` do outro projeto e extraiu o que ele faz de granular: jobs em paralelo por responsabilidade, um job `gates` como único check obrigatório da `main`, composite actions locais e `permissions: contents: read`. Aplicou ao sol-planet:
+
+- `ci.yml` virou seis jobs em paralelo (`lint`, `tipos`, `build`, `contratos`, `testes`, `segredos`) mais o `gates`.
+- Os passos repetidos foram para duas composite actions: `.github/actions/preparar` (pnpm, Node e dependências) e `.github/actions/deploy-vps` (envio, subida e verificação de saúde), que substituiu o workflow reutilizável.
+- Entrou um job **`build` do Next**, que não existia: foi o `next build` que pegou o erro de tipo da interação 11, e o `typecheck` da raiz não o cobre.
+- O ruleset da `main` passou a exigir só o `gates`, em vez dos dois nomes antigos de job.
+
+**Escolha da IA:** o CI deixou de rodar em *todo* push e passou a rodar em PR para a `main`, push na `main` e acionamento manual, como no outro projeto. Isso evita rodada duplicada no PR, e o acionamento manual permite rodar numa branch antes do PR.
+
 ## Sugestões da IA × decisões
 
 | Tema                       | Sugestão da IA                                        | Decisão                                                                               |
@@ -138,6 +151,7 @@ Pelo escopo A, faltaria: monólito modular com fronteiras explícitas e volume d
 | Padrão do M1              | Núcleo de domínio puro com E/S na borda              | ✅ [ADR 0001](adr/0001-nucleo-de-dominio-puro.md), com a hexagonal completa descartada  |
 | Rodadas ao banco no resumo | Juntar `canSeePlant` e `plants` num `join`       | ⏸️ Próximo passo: o SLO já está atendido com folga                                |
 | Autenticação da API      | Bearer via OAuth já existente, para clientes externos | ⏸️ Mantido o cookie nesta entrega, com o Bearer registrado como evolução           |
+| Estrutura do CI | Jobs paralelos + `gates` + composite actions, como no medguia | ✅ Aplicado |
 | Aprovação da produção     | Aprovador obrigatório no Environment `production` | 🔄 O GitHub recusou (422): exige plano pago em repositório privado. **Decisão:** produção só por acionamento manual, a partir da `main` |
 | Bypass na proteção da `main` | Sem exceção, nem para o admin | ✅ Aceito |
 | Ajustes pós-entrega        | Plano em 7 passos, começando por `.env.example`, C4, flag e ADR 0002, com a proteção da `main` por último | ✅ Aprovado ("vamos lá"); itens 1 a 5 executados, restam proteção da `main` e staging online |

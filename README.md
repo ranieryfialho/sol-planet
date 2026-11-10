@@ -2,7 +2,7 @@
 
 # sol-planet
 
-[![CI](https://github.com/ranieryfialho/sol-planet/actions/workflows/ci.yml/badge.svg?branch=projeto-final-gt4)](https://github.com/ranieryfialho/sol-planet/actions/workflows/ci.yml)
+[![CI](https://github.com/ranieryfialho/sol-planet/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ranieryfialho/sol-planet/actions/workflows/ci.yml)
 
 Monitoramento das placas solares via API cloud do app **Solplanet** (engenharia reversa do APK 5.2.1): API REST, dashboard web e alertas e relatório diário no WhatsApp.
 
@@ -166,7 +166,7 @@ Get-Content k6/smoke.js | docker run --rm -i -p 5665:5665 -e K6_WEB_DASHBOARD=tr
 | M2 | Testes unitários do domínio | [tests/domain.test.ts](tests/domain.test.ts), [tests/summary.test.ts](tests/summary.test.ts), [tests/rollover.test.ts](tests/rollover.test.ts), além de sessão, contas e WhatsApp (Vitest) |
 | M2 | Um teste de integração | [tests/api.int.test.ts](tests/api.int.test.ts): rotas reais do Next + Postgres real + Supertest |
 | M2 | Cobertura mínima declarada e cumprida | `thresholds` em [vitest.config.mts](vitest.config.mts). A CI falha abaixo do mínimo. |
-| M3 | CI verde com install, lint e test | [.github/workflows/ci.yml](.github/workflows/ci.yml): install, lint, typecheck, Spectral, testes com cobertura e gitleaks |
+| M3 | CI verde com install, lint e test | [.github/workflows/ci.yml](.github/workflows/ci.yml): jobs em paralelo (lint, tipos, build do Next, OpenAPI e `.env.example`, testes com cobertura, gitleaks) e um `gates` que resume todos; passo comum em [.github/actions/preparar](.github/actions/preparar/action.yml) |
 | M3 | `.env.example` no repo, segredos fora | [.env.example](.env.example) sem valores reais e validado contra o código na CI (`pnpm lint:env`), `.env` no [.gitignore](.gitignore), gitleaks no histórico completo na CI (ver [Segredos](#segredos)) |
 | M3 | Logs estruturados | pino em JSON, uma linha por requisição e por evento do worker: [packages/observability](packages/observability/src/index.ts) |
 | M3 | Uma métrica | `http_request_duration_seconds` (histograma por rota e status) em `GET /api/metrics` |

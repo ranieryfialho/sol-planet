@@ -59,7 +59,7 @@ Com ela desligada, `/mcp`, `/oauth/*`, `/.well-known/oauth-*` e `/conectar-ia` r
 
 ## Proteção da branch
 
-A `main` é protegida por um *ruleset* do GitHub, sem exceção para ninguém (nem para o dono): sem push direto, só pull request com os checks `install, lint, typecheck, OpenAPI e testes` e `varredura de segredos (gitleaks)` verdes, sem *force push* e sem exclusão. Como o deploy dispara em push na `main` e a produção só sobe a partir dela, **só código que passou pela CI chega aos ambientes**.
+A `main` é protegida por um *ruleset* do GitHub, sem exceção para ninguém (nem para o dono): sem push direto, só pull request com o check `gates` verde (ele resume os jobs `lint`, `tipos`, `build`, `contratos`, `testes` e `segredos`, que rodam em paralelo), sem *force push* e sem exclusão. Como o deploy dispara em push na `main` e a produção só sobe a partir dela, **só código que passou pela CI chega aos ambientes**.
 
 ## Configuração única no GitHub e na VPS
 
