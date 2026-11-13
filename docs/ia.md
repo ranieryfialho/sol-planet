@@ -183,7 +183,7 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 
 ### 21. Exposição das rotas do M3 no staging (13/11/2026)
 
-**Prompt:** "Quero exportar as rotas de obervabilidade do M3 no README, vamofazer fazer isso."
+**Prompt:** "Quero exportar as rotas de observabilidade do M3 no README, vamos fazer isso."
 
 **Resultado:** a IA conferiu o staging real (`/api/health` e `/api/metrics` respondiam) e a documentação. As rotas já estavam listadas, mas faltava um roteiro de como ver cada item do M3 no staging: saúde, métrica, logs e SLO.
 
