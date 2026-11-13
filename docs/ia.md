@@ -181,6 +181,14 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 
 **Defeitos encontrados só porque a imagem foi construída e testada de verdade:** (1) o `.dockerignore` excluía a pasta `docs` inteira, então o contrato não entrava na imagem e o deploy do staging teria falhado; (2) o contrato declarava só `http://localhost:3000` como servidor, e o *Try it out* iria para o endereço errado. Ambos foram corrigidos antes do PR.
 
+### 21. Observabilidade no staging: proposta, teste e descarte (13/11/2026)
+
+**Prompt:** "O projeto tem feature de observabilidade? Estando em staging, conseguiríamos adicionar? [...] Vou querer Prometheus + Grafana + Loki no staging, sem alertas, com subdomínio público e documentação. [...] Não sei se vou manter, acho que já é over engineering. [...] Vamos descartar tudo o que fizemos em relação ao Grafana e adicionar só o M3 na documentação."
+
+**Resultado:** a IA primeiro respondeu sem alterar nada: o M3 já entrega logs estruturados (pino), a métrica `http_request_duration_seconds` em `/api/metrics`, o `/api/health` e o SLO. Depois propôs Prometheus, Loki e Grafana no staging e, com a sua aprovação do escopo, implementou e **testou localmente** (alvo do Prometheus, logs no Loki, dashboard provisionado e consultas executadas uma a uma). Antes de commitar, a IA expôs os custos: mais memória numa VPS compartilhada com a produção, um Grafana público protegido só por senha, o socket do Docker montado no coletor de logs e passos manuais de DNS e proxy. Você concluiu que era **over engineering para esta entrega**, e tudo foi descartado sem commit. O que ficou foi só a documentação de [como ver o M3 no staging](deploy.md#ver-o-m3-no-staging-logs-métrica-e-slo) (saúde, métrica, logs e SLO), ligada às linhas do M3 do README.
+
+**Lição:** a IA propôs a stack completa como opção; a decisão de não manter foi sua, e ela acabou sendo mais adequada ao tamanho do projeto. A IA também sugeriu um login unificado do Grafana com o app, que você descartou antes de implementar.
+
 ## Sugestões da IA × decisões
 
 | Tema                             | Sugestão da IA                                                                                                   | Decisão                                                                                                                                             |
@@ -207,6 +215,7 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 | Ajustes pós-entrega             | Plano em 7 passos, começando por `.env.example`, C4, flag e ADR 0002, com a proteção da `main` por último | ✅ Aprovado ("vamos lá"); itens 1 a 5 executados, restam proteção da `main` e staging online                                                    |
 | Commits                          | Conventional Commits em português, sem reescrever o histórico publicado                                         | ✅ Adotado daqui em diante                                                                                                                           |
 | Staging online com seed          | Útil como complemento, não exigido pela aula                                                                    | 🔄 Compose e deploy prontos; falta publicar na VPS e decidir o acesso do avaliador                                                                   |
+| Observabilidade no staging       | Prometheus + Grafana + Loki, sem alertas, testada localmente                                                     | ❌ **Descartada**: over engineering para o escopo B; ficou só a documentação de como ver o M3 no staging                                         |
 | Flag de funcionalidade           | Variável de ambiente em vez de Unleash/GrowthBook                                                                | ✅ [ADR 0002](adr/0002-flags-por-ambiente-e-staging-na-vps.md)                                                                                        |
 | Banco do staging                 | Postgres próprio com dados simulados, em vez de cópia da produção                                             | ✅ [ADR 0002](adr/0002-flags-por-ambiente-e-staging-na-vps.md)                                                                                        |
 
