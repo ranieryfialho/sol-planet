@@ -65,6 +65,24 @@ O Swagger é a flag `FEATURE_DOCS`: **ligada no staging** pelo compose e **desli
 
 Fora do que se avalia: `GET /api/whatsapp/groups` responde `[]` (o staging não tem Evolution API), e o `POST /oauth/register` grava um cliente OAuth (por isso ficou de fora das verificações automáticas).
 
+### Ver o M3 no staging (logs, métrica e SLO)
+
+Os três itens de observabilidade do M3 funcionam no staging sem configuração extra. As duas rotas são públicas (não têm dados de usina).
+
+| Item do M3 | Como ver no staging | O que esperar |
+|---|---|---|
+| **Saúde** | Abra [/api/health](https://staging-solar.rafiweb.com.br/api/health) | `{"status":"ok","banco":"ok","latenciaBancoMs":...,"uptimeS":...}`; se o banco cair, 503 com `"status":"degradado"` |
+| **Métrica** | Abra [/api/metrics](https://staging-solar.rafiweb.com.br/api/metrics) e procure `http_request_duration_seconds` | Uma série por `route` e `status`, por exemplo `http_request_duration_seconds_count{route="/api/usinas/{id}/resumo",status="200"}`, mais os `_bucket` da distribuição da latência e as métricas do processo Node |
+| **Logs estruturados** | Na VPS: `docker logs --tail 20 solar-staging-web` | Uma linha JSON por requisição, como `{"level":30,"time":"...","service":"web-staging","route":"/api/health","status":200,"ms":2,"msg":"requisição"}`. O nível sai de `LOG_LEVEL` (padrão `info`) |
+| **SLO** (p95 < 300 ms, erro < 1%) | *Actions → Deploy Solar →* última execução do staging *→ Summary* (job `desempenho`) | p95, mediana, p99 e checks do k6 contra a URL pública; o job fica vermelho se o SLO não for cumprido. Definição e resultados medidos em [desempenho.md](desempenho.md) |
+
+Para ver os contadores subirem, faça algumas chamadas pelo Swagger em `/docs` (com a conta demo) e recarregue o `/api/metrics`. Em `/api/metrics`, filtre por rota; o SLI do SLO é a série `route="/api/usinas/{id}/resumo"`. Os logs também mostram `ms` por requisição, útil para achar uma chamada lenta:
+
+```bash
+# na VPS: só as requisições do resumo
+docker logs --tail 200 solar-staging-web | grep '"route":"/api/usinas/{id}/resumo"'
+```
+
 ### Verificação automática
 
 O mesmo roteiro da tabela roda sozinho depois de cada deploy do staging (job `desempenho`, resumo da execução em *Actions*) e também na sua máquina, sem gravar dados:

@@ -181,6 +181,14 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 
 **Defeitos encontrados só porque a imagem foi construída e testada de verdade:** (1) o `.dockerignore` excluía a pasta `docs` inteira, então o contrato não entrava na imagem e o deploy do staging teria falhado; (2) o contrato declarava só `http://localhost:3000` como servidor, e o *Try it out* iria para o endereço errado. Ambos foram corrigidos antes do PR.
 
+### 21. Exposição das rotas do M3 no staging (13/11/2026)
+
+**Prompt:** "Quero exportar as rotas de observabilidade do M3 no README, vamos fazer isso."
+
+**Resultado:** a IA conferiu o staging real (`/api/health` e `/api/metrics` respondiam) e a documentação. As rotas já estavam listadas, mas faltava um roteiro de como ver cada item do M3 no staging: saúde, métrica, logs e SLO.
+
+**Decisão minha:** optei por **expor as rotas do M3 no README e no `docs/deploy.md`**. Entrou a seção [Ver o M3 no staging](deploy.md#ver-o-m3-no-staging-logs-métrica-e-slo), com o link ou comando e o resultado esperado de cada item, e as linhas do M3 do README passaram a apontar para ela.
+
 ## Sugestões da IA × decisões
 
 | Tema                             | Sugestão da IA                                                                                                   | Decisão                                                                                                                                             |
@@ -207,6 +215,7 @@ Depois da primeira entrega, o projeto ganhou práticas que o escopo reserva ao n
 | Ajustes pós-entrega             | Plano em 7 passos, começando por `.env.example`, C4, flag e ADR 0002, com a proteção da `main` por último | ✅ Aprovado ("vamos lá"); itens 1 a 5 executados, restam proteção da `main` e staging online                                                    |
 | Commits                          | Conventional Commits em português, sem reescrever o histórico publicado                                         | ✅ Adotado daqui em diante                                                                                                                           |
 | Staging online com seed          | Útil como complemento, não exigido pela aula                                                                    | 🔄 Compose e deploy prontos; falta publicar na VPS e decidir o acesso do avaliador                                                                   |
+| Como mostrar o M3 no staging     | Listar as rotas do M3 e o roteiro de verificação                                                                  | ✅ **Decisão:** expor as rotas do M3 no README e no `docs/deploy.md`                                                                           |
 | Flag de funcionalidade           | Variável de ambiente em vez de Unleash/GrowthBook                                                                | ✅ [ADR 0002](adr/0002-flags-por-ambiente-e-staging-na-vps.md)                                                                                        |
 | Banco do staging                 | Postgres próprio com dados simulados, em vez de cópia da produção                                             | ✅ [ADR 0002](adr/0002-flags-por-ambiente-e-staging-na-vps.md)                                                                                        |
 
