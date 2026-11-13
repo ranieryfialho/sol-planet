@@ -169,9 +169,9 @@ Get-Content k6/smoke.js | docker run --rm -i -p 5665:5665 -e K6_WEB_DASHBOARD=tr
 | M2 | Cobertura mínima declarada e cumprida | `thresholds` em [vitest.config.mts](vitest.config.mts). A CI falha abaixo do mínimo. |
 | M3 | CI verde com install, lint e test | [.github/workflows/ci.yml](.github/workflows/ci.yml): jobs em paralelo (lint, tipos, build do Next, OpenAPI e `.env.example`, testes com cobertura, gitleaks) e um `gates` que resume todos; passo comum em [.github/actions/preparar](.github/actions/preparar/action.yml) |
 | M3 | `.env.example` no repo, segredos fora | [.env.example](.env.example) sem valores reais e validado contra o código na CI (`pnpm lint:env`), `.env` no [.gitignore](.gitignore), gitleaks no histórico completo na CI (ver [Segredos](#segredos)) |
-| M3 | Logs estruturados | pino em JSON, uma linha por requisição e por evento do worker: [packages/observability](packages/observability/src/index.ts) |
-| M3 | Uma métrica | `http_request_duration_seconds` (histograma por rota e status) em `GET /api/metrics` |
-| M3 | Um SLO simples | p95 < 300 ms e menos de 1% de erro em `/api/usinas/{id}/resumo`: [docs/desempenho.md](docs/desempenho.md) |
+| M3 | Logs estruturados | pino em JSON, uma linha por requisição e por evento do worker: [packages/observability](packages/observability/src/index.ts). No staging: `docker logs solar-staging-web` ([como ver](docs/deploy.md#ver-o-m3-no-staging-logs-métrica-e-slo)) |
+| M3 | Uma métrica | `http_request_duration_seconds` (histograma por rota e status) em `GET /api/metrics`. No staging: [/api/metrics](https://staging-solar.rafiweb.com.br/api/metrics) e [/api/health](https://staging-solar.rafiweb.com.br/api/health) ([como ver](docs/deploy.md#ver-o-m3-no-staging-logs-métrica-e-slo)) |
+| M3 | Um SLO simples | p95 < 300 ms e menos de 1% de erro em `/api/usinas/{id}/resumo`: [docs/desempenho.md](docs/desempenho.md). No staging, o resultado do k6 fica no resumo do job `desempenho` em *Actions* |
 | M4 | README desde o início + um ADR | Este README e o [ADR 0001](docs/adr/0001-nucleo-de-dominio-puro.md) (MADR) |
 | M4 | OpenAPI do endpoint principal | [docs/openapi.yaml](docs/openapi.yaml) (OpenAPI 3.1, todas as rotas, lint com Spectral na CI) |
 | M4 | Smoke k6 com p95 medido | [k6/smoke.js](k6/smoke.js). Resultado: **p95 = 24,14 ms**, 0% de erro ([docs/desempenho.md](docs/desempenho.md)) |
