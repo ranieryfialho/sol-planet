@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { connectedStrings, dropPercent, fmtW, hasStringImbalance, isAfterSun, isGridVoltageOff, isMidday, mins } from "../apps/worker/src/domain";
+import { CYCLE_END_HEADER, connectedStrings, cycleEndMessage, cycleStartMessage, isNoStartTime, noStartMessage, dropPercent, fmtW, hasStringImbalance, isAfterSun, isGridVoltageOff, isMidday, mins } from "../apps/worker/src/domain";
 
 describe("horários", () => {
   test("HH:MM vira minutos desde a meia-noite", () => {
@@ -80,4 +80,37 @@ describe("tensão da rede", () => {
 test("potência formatada em W ou kW", () => {
   expect(fmtW(850.4)).toBe("850 W");
   expect(fmtW(4200)).toBe("4.20 kW");
+});
+
+describe("início e fim do dia", () => {
+  test("sem geração: só avisa depois do prazo contado do início da janela e antes do fim", () => {
+    expect(isNoStartTime("06:41", "05:12", "17:30", 90)).toBe(false);
+    expect(isNoStartTime("06:42", "05:12", "17:30", 90)).toBe(true);
+    expect(isNoStartTime("17:30", "05:12", "17:30", 90)).toBe(false);
+    expect(isNoStartTime("05:42", "05:12", "17:30", 30)).toBe(true); // prazo configurável
+  });
+
+  test("início: usina em aviso não é descrita como normal", () => {
+    const msg = cycleStartMessage([
+      { name: "Casa", statusLabel: "normal", ok: true, powerW: 928 },
+      { name: "Sítio", statusLabel: "alerta", ok: false, powerW: 208 },
+    ]);
+    expect(msg).toContain("*Casa*: operando normalmente · 928 W");
+    expect(msg).toContain("*Sítio*: ⚠️ com alerta · 208 W");
+  });
+
+  test("sem geração: lista causas e deixa claro que não é diagnóstico", () => {
+    const msg = noStartMessage("05:12");
+    expect(msg).toContain("05:12");
+    expect(msg).toContain("não é um diagnóstico");
+    expect(msg).toContain("empresa responsável pela instalação");
+  });
+
+  test("fim: cita o horário do relatório só quando ele ainda vai chegar", () => {
+    const plants = [{ name: "Casa", todayKwh: 35.84 }];
+    expect(cycleEndMessage(plants, "18:00")).toContain("O relatório diário chega às 18:00.");
+    expect(cycleEndMessage(plants, null)).not.toContain("relatório");
+    expect(cycleEndMessage(plants, null)).toContain("35.8 kWh gerados hoje");
+    expect(CYCLE_END_HEADER).toContain("encerrado");
+  });
 });

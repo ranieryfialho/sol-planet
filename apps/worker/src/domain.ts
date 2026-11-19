@@ -37,3 +37,52 @@ export function isGridVoltageOff(volts: number) {
   const nominal = Math.abs(volts - 127) < Math.abs(volts - 220) ? 127 : 220;
   return volts > nominal * 1.1 || volts < nominal * 0.87;
 }
+
+/** Sem nenhum dado de geração `waitMinutes` depois do início do dia (e ainda de dia): vale avisar. */
+export const isNoStartTime = (time: string, dayStart: string, dayEnd: string, waitMinutes: number) => mins(time) >= mins(dayStart) + waitMinutes && mins(time) < mins(dayEnd);
+
+export interface CyclePlant {
+  name: string;
+  /** rótulo do status (normal, alerta...) */
+  statusLabel: string;
+  /** 1 = normal; qualquer outro valor é lido como "com problema" */
+  ok: boolean;
+  powerW: number;
+}
+
+/** Primeiro dado do dia chegou: o sistema acordou junto com a usina. */
+export function cycleStartMessage(plants: CyclePlant[]) {
+  const lines = plants.map((p) => `• *${p.name}*: ${p.ok ? "operando normalmente" : `⚠️ com ${p.statusLabel}`} · ${fmtW(p.powerW)}`);
+  return ["🌅 *Monitoramento iniciado*", "Chegou o primeiro dado de geração de hoje.", ...lines].join("\n");
+}
+
+/** Nada gerado desde o início do dia: causas possíveis, sem fingir diagnóstico. */
+export function noStartMessage(dayStart: string) {
+  return [
+    "🌫️ *Sem geração desde o amanhecer*",
+    `O dia começou às ${dayStart}, mas até agora não chegou nenhum dado de geração da sua usina.`,
+    "",
+    "Algumas causas possíveis:",
+    "• inversor desligado ou disjuntor desarmado",
+    "• falta de energia da rede (o inversor desliga junto)",
+    "• inversor sem internet (Wi-Fi ou roteador)",
+    "• painéis cobertos ou com sombra forte",
+    "• instabilidade na API do fabricante",
+    "",
+    "⚠️ Esta lista não é um diagnóstico. Se persistir, acione a empresa responsável pela instalação da usina.",
+  ].join("\n");
+}
+
+/** Fim do dia de monitoramento; `reportTime` só entra se o relatório ainda vai chegar hoje. */
+export function cycleEndMessage(plants: { name: string; todayKwh: number }[], reportTime: string | null) {
+  const lines = plants.map((p) => `• *${p.name}*: ${p.todayKwh.toFixed(1)} kWh gerados hoje`);
+  return [
+    "🌙 *Monitoramento encerrado por hoje*",
+    "O sistema acompanhou a usina durante o dia.",
+    ...lines,
+    ...(reportTime ? ["", `O relatório diário chega às ${reportTime}.`] : []),
+  ].join("\n");
+}
+
+/** Cabeçalho do relatório quando o aviso de fim é enviado junto com ele. */
+export const CYCLE_END_HEADER = "🌙 Monitoramento de hoje encerrado.";

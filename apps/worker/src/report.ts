@@ -2,15 +2,17 @@ import { alerts, dailyEnergy, getSettings, plantIdsOf, plants, type Db } from "@
 import { PLANT_STATUS } from "@sol/solplanet";
 import { and, avg, eq, gte, inArray, lt, ne, sql } from "drizzle-orm";
 import { config, localNow } from "./config";
+import { CYCLE_END_HEADER } from "./domain";
 
 const fmtDate = (day: string) => day.split("-").reverse().join("/");
 
-export async function buildDailyReport(db: Db, accountId: number): Promise<string> {
+/** `cycleEnd`: abre o relatório com o aviso de fim do monitoramento do dia (em vez de uma mensagem separada). */
+export async function buildDailyReport(db: Db, accountId: number, opts: { cycleEnd?: boolean } = {}): Promise<string> {
   const { day } = localNow();
   const rows = await db.select().from(plants).where(inArray(plants.id, plantIdsOf(db, accountId))).orderBy(plants.name);
   const { tariff } = await getSettings(db, accountId);
   const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  const lines = [`☀️ *Relatório solar — ${fmtDate(day)}*`];
+  const lines = [`☀️ *Relatório solar — ${fmtDate(day)}*`, ...(opts.cycleEnd ? [CYCLE_END_HEADER] : [])];
   let total = 0;
 
   for (const p of rows) {
