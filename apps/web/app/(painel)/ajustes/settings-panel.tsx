@@ -337,6 +337,9 @@ export function SettingsPanel({ initial, whatsapp, lastReportAt, account }: { in
         >
           <Toggle on={s.rules.daylightOnly} onChange={(v) => rules({ daylightOnly: v })} label="Somente durante o dia" />
         </Row>
+        <Row icon="warning" iconClass="text-sun-dark" title={<>Aviso do inversor por mais de {num("warningMinutes", 0, 120)} min</>} subtitle='Status "alerta" da Solplanet só vira mensagem se durar esse tempo. 0 avisa na hora'>
+          <Toggle on={s.rules.warningMinutes > 0} onChange={(v) => rules({ warningMinutes: v ? 15 : 0 })} label="Esperar antes de alertar aviso" />
+        </Row>
         <Row icon="bolt" iconClass="text-danger" title="Erros do inversor" subtitle="Códigos de falha reportados pela Solplanet">
           <Toggle on={s.rules.inverterErrors} onChange={(v) => rules({ inverterErrors: v })} label="Alertar erros do inversor" />
         </Row>
@@ -374,6 +377,18 @@ export function SettingsPanel({ initial, whatsapp, lastReportAt, account }: { in
           subtitle="Compara o dia com a média dos 7 anteriores, após o fim do sol"
         >
           <Toggle on={s.rules.lowGeneration} onChange={(v) => rules({ lowGeneration: v })} label="Alertar baixa geração" />
+        </Row>
+        <Row icon="wb_twilight" iconClass="text-mint-dark" title="Início do dia" subtitle="Avisa no primeiro dado de geração do dia (não no nascer do sol, porque o inversor acorda depois). Se nada chegar no prazo abaixo, avisa com possíveis causas">
+          <Toggle on={s.rules.cycleStart} onChange={(v) => rules({ cycleStart: v })} label="Avisar início do dia" />
+        </Row>
+        <Row icon="hourglass_top" iconClass="text-mint-dark" title={<>Sem geração após {num("noStartMinutes", 30, 240)} min do início</>} subtitle="Prazo para avisar que nada chegou desde o amanhecer. Vale com o aviso de início do dia ligado">
+          <span className="w-12" aria-hidden />
+        </Row>
+        <Row icon="bedtime" iconClass="text-mint-dark" title="Fim do dia" subtitle="Avisa 30 min após o pôr do sol, com a geração do dia e o horário em que o relatório chega">
+          <Toggle on={s.rules.cycleEnd} onChange={(v) => rules({ cycleEnd: v })} label="Avisar fim do dia" />
+        </Row>
+        <Row icon="merge" iconClass="text-mint-dark" title="Fim do dia junto com o relatório" subtitle="Sem mensagem separada: o aviso de fim abre o relatório diário. Precisa do aviso de fim e do relatório ligados">
+          <Toggle on={s.rules.cycleEndInReport} onChange={(v) => rules({ cycleEndInReport: v })} label="Juntar fim do dia ao relatório" />
         </Row>
         <Row icon="check_circle" iconClass="text-mint-dark" title="Avisar quando normalizar" subtitle="Confirmação de restabelecimento">
           <Toggle on={s.rules.recovered} onChange={(v) => rules({ recovered: v })} label="Avisar normalização" />

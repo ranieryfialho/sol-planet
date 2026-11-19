@@ -5,6 +5,7 @@ import { Collector } from "./collector";
 import { LivoltekCollector } from "./livoltek-collector";
 import { config, localNow } from "./config";
 import { buildDailyReport, buildMonthlyReport, buildWeeklyReport, previousMonth } from "./report";
+import { endInReport, maybeSendCycleEnd, maybeSendCycleStart } from "./cycle";
 import { notify } from "./whatsapp";
 import { logger } from "@sol/observability";
 
@@ -56,7 +57,7 @@ async function maybeSendReport(c: AnyCollector) {
   if (time < report.time) return;
   const lastKey = accountKey("last_report", c.accountId);
   if ((await getKv<string>(db, lastKey)) === day) return;
-  await notify(c.who, await buildDailyReport(db, c.accountId), c.settings);
+  await notify(c.who, await buildDailyReport(db, c.accountId, { cycleEnd: endInReport(c) }), c.settings);
   const value = new Date().toISOString();
   await db
     .insert(kv)
@@ -112,6 +113,8 @@ async function cycle() {
         await c.tick(claimed);
         // conta sem usina gravada (ex.: Livoltek aguardando o revendedor) não recebe relatório zerado
         if (!c.hasPlants) continue;
+        await maybeSendCycleStart(db, c);
+        await maybeSendCycleEnd(db, c);
         await maybeSendReport(c);
         await maybeSendWeekly(c);
         await maybeSendMonthly(c);

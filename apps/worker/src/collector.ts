@@ -374,7 +374,8 @@ export class Collector {
       const badSince = prev?.badSince ? new Date(prev.badSince) : now;
       const minutes = (now.getTime() - badSince.getTime()) / 60_000;
       const escalated = prev?.alertedAt && prev.status !== status;
-      const ready = status !== OFFLINE || minutes >= rules.offlineMinutes;
+      // offline e aviso esperam N min seguidos (oscilação curta não vira mensagem); erro avisa na hora
+      const ready = status === OFFLINE ? minutes >= rules.offlineMinutes : status === WARNING ? minutes >= rules.warningMinutes : true;
       let alertedAt = prev?.alertedAt ?? null;
 
       if (ready && (!alertedAt || escalated)) {

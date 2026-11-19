@@ -24,6 +24,8 @@ export interface Settings {
     dayStart: string;
     dayEnd: string;
     inverterErrors: boolean;
+    /** status "alerta" do fabricante só avisa depois de N min seguidos; 0 avisa no primeiro ciclo */
+    warningMinutes: number;
     recovered: boolean;
     /** avisa quando a geração do dia fica lowGenerationPct% abaixo da média dos 7 dias anteriores */
     lowGeneration: boolean;
@@ -51,6 +53,14 @@ export interface Settings {
     weeklySummary: boolean;
     /** resumo do mês anterior no dia 1, no horário do relatório */
     monthlyReport: boolean;
+    /** avisa quando chega o primeiro dado de geração do dia (e, se não chegar, o que pode ter acontecido) */
+    cycleStart: boolean;
+    /** minutos depois do início da janela sem nenhum dado de geração para avisar "sem geração desde o amanhecer" */
+    noStartMinutes: number;
+    /** avisa quando o dia de monitoramento termina, com a geração do dia */
+    cycleEnd: boolean;
+    /** em vez de uma mensagem separada, o aviso de fim vem como cabeçalho do relatório diário */
+    cycleEndInReport: boolean;
   };
   report: { enabled: boolean; time: string };
   /** R$/kWh para estimar economia */
@@ -77,6 +87,7 @@ export function defaultSettings(env = process.env): Settings {
       dayStart: start,
       dayEnd: end,
       inverterErrors: true,
+      warningMinutes: 0,
       recovered: true,
       lowGeneration: true,
       lowGenerationPct: 20,
@@ -94,6 +105,10 @@ export function defaultSettings(env = process.env): Settings {
       staleMinutes: 30,
       weeklySummary: true,
       monthlyReport: true,
+      cycleStart: false,
+      noStartMinutes: 90,
+      cycleEnd: false,
+      cycleEndInReport: false,
     },
     report: { enabled: true, time: env.REPORT_TIME ?? "19:00" },
     tariff: Number(env.TARIFA_KWH ?? 0.95),
