@@ -101,20 +101,20 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const monthCard = (
     <Card>
       <CardHeader title="Resumo" icon="calendar_month" iconTone="sun" href="/historico" aside={<Pill tone="gray">{cap(monthName())}</Pill>} />
-      <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-2xl bg-surface-low p-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="min-w-0 rounded-2xl bg-surface-low p-3">
           <p className="text-[11px] font-medium text-ink-3">Este mês</p>
-          <p className="mt-1 text-lg font-bold">{n(monthKwh, 0)}</p>
+          <p className="mt-1 truncate text-base font-bold sm:text-lg">{n(monthKwh, 0)}</p>
           <p className="text-[11px] font-bold text-ink-2">kWh</p>
         </div>
-        <div className="rounded-2xl bg-surface-low p-3">
+        <div className="min-w-0 rounded-2xl bg-surface-low p-3">
           <p className="text-[11px] font-medium text-ink-3">Acumulado</p>
-          <p className="mt-1 text-lg font-bold">{total.value}</p>
+          <p className="mt-1 truncate text-base font-bold sm:text-lg">{total.value}</p>
           <p className="text-[11px] font-bold text-ink-2">{total.unit}</p>
         </div>
-        <div className="rounded-2xl bg-mint-soft p-3 text-mint-dark">
+        <div className="min-w-0 rounded-2xl bg-mint-soft p-3 text-mint-dark">
           <p className="text-[11px] font-medium">Economia</p>
-          <p className="mt-1 text-lg font-bold">{brl(monthKwh * settings.tariff)}</p>
+          <p className="mt-1 truncate text-base font-bold sm:text-lg">{brl(monthKwh * settings.tariff)}</p>
           <p className="text-[11px] font-bold">no mês</p>
         </div>
       </div>

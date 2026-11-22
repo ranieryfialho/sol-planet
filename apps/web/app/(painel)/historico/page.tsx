@@ -160,7 +160,7 @@ export default async function Historico({ searchParams }: { searchParams: Promis
         </div>
       </Card>
 
-      <div className="grid grid-cols-3 gap-3 lg:gap-6">
+      <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-3 lg:gap-6">
         {period === "dia" ? (
           <>
             <Stat icon="bolt" tone="mint" label="Pico" value={fmtPower(peakW)} />
