@@ -1,10 +1,11 @@
 "use client";
 
 import type { Recipient, Settings } from "@sol/db";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Card, CardHeader, Icon, IconBadge, Pill } from "@/components/ui";
 import { logout } from "@/app/login/actions";
 import { connectWhatsApp, disconnectWhatsApp, listContacts, sendTest, updateSettings, whatsappState } from "./actions";
+import { RULE_INFO, type RuleInfo } from "./rule-info";
 
 interface WaInfo {
   configured: boolean;
@@ -27,16 +28,89 @@ function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) =
   );
 }
 
-function Row({ icon, iconClass = "", title, subtitle, children }: { icon: string; iconClass?: string; title: React.ReactNode; subtitle?: string; children: React.ReactNode }) {
+/**
+ * Linha de regra. Título + botão (i) + toggle ficam na primeira linha; os campos (minutos, %, horários) vão
+ * numa linha própria embaixo, para não espremer a frase em telas estreitas. O (i) abre um painel com a explicação.
+ */
+function Row({
+  icon,
+  iconClass = "",
+  title,
+  subtitle,
+  info,
+  fields,
+  children,
+}: {
+  icon: string;
+  iconClass?: string;
+  title: string;
+  subtitle?: string;
+  info?: RuleInfo;
+  fields?: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
   return (
-    <div className="flex items-center gap-4 border-b border-line/60 py-4 last:border-0">
-      <Icon name={icon} className={`text-[22px] ${iconClass || "text-ink-2"}`} />
-      <div className="min-w-0 flex-1">
-        <div className="font-medium leading-6">{title}</div>
-        {subtitle && <p className="text-[13px] text-ink-2">{subtitle}</p>}
+    <div className="border-b border-line/60 py-4 last:border-0">
+      <div className="flex items-start gap-3">
+        <Icon name={icon} className={`mt-0.5 text-[22px] ${iconClass || "text-ink-2"}`} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1">
+            <span className="font-medium leading-6">{title}</span>
+            {info && (
+              <button
+                type="button"
+                aria-expanded={open}
+                aria-controls={panelId}
+                aria-label={`O que é: ${title}`}
+                onClick={() => setOpen(!open)}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${open ? "bg-sky-soft text-sky" : "text-ink-3 hover:text-ink"}`}
+              >
+                <Icon name="info" fill={open} className="text-[20px]" />
+              </button>
+            )}
+          </div>
+          {subtitle && <p className="text-[13px] leading-[18px] text-ink-2">{subtitle}</p>}
+        </div>
+        {children}
       </div>
-      {children}
+      {fields && <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2 pl-[34px] text-[15px] text-ink-2">{fields}</div>}
+      {info && open && (
+        <div id={panelId} className="mt-3 space-y-2 rounded-2xl bg-surface-low p-4 text-[13px] leading-5 text-ink-2 sm:ml-[34px]">
+          <p>{info.what}</p>
+          {info.on && (
+            <p>
+              <span className="font-semibold text-mint-dark">Ligado: </span>
+              {info.on}
+            </p>
+          )}
+          {info.off && (
+            <p>
+              <span className="font-semibold text-ink">Desligado: </span>
+              {info.off}
+            </p>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+/** Grupo de regras que abre e fecha; o resumo mostra quantas estão ligadas. */
+function Section({ title, icon, active, total, defaultOpen = false, children }: { title: string; icon: string; active: number; total: number; defaultOpen?: boolean; children: React.ReactNode }) {
+  return (
+    <details open={defaultOpen} className="group border-t border-line/60 first:border-0">
+      <summary className="flex cursor-pointer list-none items-center gap-3 py-4 [&::-webkit-details-marker]:hidden">
+        <Icon name={icon} className="text-[22px] text-mint-dark" />
+        <span className="flex-1 text-[15px] font-bold">{title}</span>
+        <span className="text-xs font-semibold text-ink-2">
+          {active}/{total} ligadas
+        </span>
+        <Icon name="expand_more" className="text-[22px] text-ink-3 transition-transform group-open:rotate-180" />
+      </summary>
+      <div>{children}</div>
+    </details>
   );
 }
 
@@ -73,9 +147,10 @@ export function SettingsPanel({ initial, whatsapp, lastReportAt, account }: { in
   };
   const rules = (patch: Partial<Settings["rules"]>) => save({ ...s, rules: { ...s.rules, ...patch } });
   /** campo numérico de uma regra */
-  const num = (k: NumRule, min: number, max: number) => (
-    <input type="number" min={min} max={max} className={`${inputCls} w-16`} value={s.rules[k]} onChange={(e) => rules({ [k]: Number(e.target.value) })} />
+  const num = (k: NumRule, min: number, max: number, disabled = false) => (
+    <input type="number" inputMode="numeric" min={min} max={max} disabled={disabled} className={`${inputCls} w-16`} value={s.rules[k]} onChange={(e) => rules({ [k]: Number(e.target.value) })} />
   );
+  const r = s.rules;
   const report = (patch: Partial<Settings["report"]>) => save({ ...s, report: { ...s.report, ...patch } });
   const setRecipient = (id: string, patch: Partial<Recipient>) => save({ ...s, recipients: s.recipients.map((r) => (r.id === id ? { ...r, ...patch } : r)) });
   const removeRecipient = (id: string) => save({ ...s, recipients: s.recipients.filter((r) => r.id !== id) });
@@ -161,8 +236,8 @@ export function SettingsPanel({ initial, whatsapp, lastReportAt, account }: { in
       {/* WhatsApp */}
       <Card className="!rounded-[2rem]">
         <CardHeader title="WhatsApp Notificações" subtitle="Alertas instantâneos via Evolution API" icon="chat" />
-        <div className="flex items-center justify-between gap-3 rounded-2xl bg-surface-low p-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 rounded-2xl bg-surface-low p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
             <span className={`h-2.5 w-2.5 rounded-full ${connected ? "bg-mint" : wa.configured ? "bg-sun" : "bg-ink-3"}`} />
             <div>
               <p className="font-semibold">{connected ? "Conectado" : wa.configured ? "Desconectado" : "Não configurado"}</p>
@@ -172,7 +247,7 @@ export function SettingsPanel({ initial, whatsapp, lastReportAt, account }: { in
             </div>
           </div>
           {wa.configured && (
-            <div className="flex shrink-0 gap-2">
+            <div className="flex shrink-0 flex-wrap justify-end gap-2">
               {connected && (
                 <button type="button" onClick={disconnect} className="rounded-full px-3 py-2 text-sm font-semibold text-danger">
                   Desconectar
@@ -313,86 +388,103 @@ export function SettingsPanel({ initial, whatsapp, lastReportAt, account }: { in
 
       {/* Regras */}
       <Card className="!rounded-[2rem]">
-        <CardHeader title="Regras de Alerta" subtitle="Critérios de acionamento imediato" icon="warning" iconTone="sun" />
-        <Row icon="cloud_off" title={<>Offline por mais de <input type="number" min={5} max={240} className={`${inputCls} w-16`} value={s.rules.offlineMinutes} onChange={(e) => rules({ offlineMinutes: Number(e.target.value) })} /> min</>} subtitle="Inversor sem sinal de telemetria">
-          <Toggle on={s.rules.offline} onChange={(v) => rules({ offline: v })} label="Alertar offline" />
-        </Row>
-        <Row
-          icon="schedule"
-          title={
-            <>
-              Apenas entre <input type="time" disabled={s.rules.dayAuto} className={`${inputCls} disabled:opacity-60`} value={s.rules.dayStart} onChange={(e) => rules({ dayStart: e.target.value })} /> e{" "}
-              <input type="time" disabled={s.rules.dayAuto} className={`${inputCls} disabled:opacity-60`} value={s.rules.dayEnd} onChange={(e) => rules({ dayEnd: e.target.value })} />{" "}
-              <button
-                type="button"
-                onClick={() => rules({ dayAuto: !s.rules.dayAuto })}
-                aria-pressed={s.rules.dayAuto}
-                className={`ml-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.rules.dayAuto ? "bg-sky-soft text-mint-dark" : "bg-sun-soft text-sun-dark"}`}
-              >
-                Auto
-              </button>
-            </>
-          }
-          subtitle={s.rules.dayAuto ? "Nascer e pôr do sol da usina, atualizado todo dia" : "À noite o inversor desliga e aparece offline"}
-        >
-          <Toggle on={s.rules.daylightOnly} onChange={(v) => rules({ daylightOnly: v })} label="Somente durante o dia" />
-        </Row>
-        <Row icon="warning" iconClass="text-sun-dark" title={<>Aviso do inversor por mais de {num("warningMinutes", 0, 120)} min</>} subtitle='Status "alerta" da Solplanet só vira mensagem se durar esse tempo. 0 avisa na hora'>
-          <Toggle on={s.rules.warningMinutes > 0} onChange={(v) => rules({ warningMinutes: v ? 15 : 0 })} label="Esperar antes de alertar aviso" />
-        </Row>
-        <Row icon="bolt" iconClass="text-danger" title="Erros do inversor" subtitle="Códigos de falha reportados pela Solplanet">
-          <Toggle on={s.rules.inverterErrors} onChange={(v) => rules({ inverterErrors: v })} label="Alertar erros do inversor" />
-        </Row>
-        <Row icon="power_off" iconClass="text-danger" title={<>Sem gerar por {num("zeroGenerationMinutes", 10, 180)} min</>} subtitle="Inversor online, mas sem produzir em pleno dia">
-          <Toggle on={s.rules.zeroGeneration} onChange={(v) => rules({ zeroGeneration: v })} label="Alertar geração zerada" />
-        </Row>
-        <Row icon="sync_problem" iconClass="text-danger" title={<>Sem dados há {num("staleMinutes", 6, 240)} min</>} subtitle="Coleta ou API da Solplanet paradas">
-          <Toggle on={s.rules.staleData} onChange={(v) => rules({ staleData: v })} label="Alertar falta de dados" />
-        </Row>
-        <Row icon="partly_cloudy_day" iconClass="text-sun-dark" title={<>Pico abaixo de {num("lowCapacityPct", 5, 90)}% da capacidade</>} subtitle="Maior potência do dia vs kWp instalados, após o fim do sol">
-          <Toggle on={s.rules.lowCapacity} onChange={(v) => rules({ lowCapacity: v })} label="Alertar pico baixo" />
-        </Row>
-        <Row icon="balance" iconClass="text-sun-dark" title={<>String PV {num("stringImbalancePct", 10, 90)}% mais fraca</>} subtitle="Uma string rende bem menos que a outra (sombra, sujeira)">
-          <Toggle on={s.rules.stringImbalance} onChange={(v) => rules({ stringImbalance: v })} label="Alertar desequilíbrio de strings" />
-        </Row>
-        <Row icon="electrical_services" iconClass="text-sun-dark" title="Tensão da rede fora da faixa" subtitle="Perto do limite em que o inversor se desliga">
-          <Toggle on={s.rules.gridVoltage} onChange={(v) => rules({ gridVoltage: v })} label="Alertar tensão da rede" />
-        </Row>
-        <Row icon="home" iconClass="text-sun-dark" title={<>Compra da rede acima de {num("gridImportKwh", 0, 1000)} kWh/dia</>} subtitle="Só com medidor. 0 desliga o alerta">
-          <Toggle on={s.rules.gridImportKwh > 0} onChange={(v) => rules({ gridImportKwh: v ? 20 : 0 })} label="Alertar consumo da rede" />
-        </Row>
-        <Row icon="calendar_month" iconClass="text-sun-dark" title={<>Mês {num("monthlyPct", 5, 90)}% abaixo da média</>} subtitle="A partir do dia 20. Também avisa a cada 500 kWh gerados">
-          <Toggle on={s.rules.monthly} onChange={(v) => rules({ monthly: v })} label="Alertar ritmo do mês" />
-        </Row>
-        <Row icon="summarize" title="Resumo semanal" subtitle="Domingo, no horário do relatório diário">
-          <Toggle on={s.rules.weeklySummary} onChange={(v) => rules({ weeklySummary: v })} label="Enviar resumo semanal" />
-        </Row>
-        <Row icon="calendar_month" title="Relatório mensal" subtitle="Dia 1, com o resumo do mês anterior">
-          <Toggle on={s.rules.monthlyReport} onChange={(v) => rules({ monthlyReport: v })} label="Enviar relatório mensal" />
-        </Row>
-        <Row
-          icon="trending_down"
-          iconClass="text-sun-dark"
-          title={<>Geração <input type="number" min={5} max={90} className={`${inputCls} w-16`} value={s.rules.lowGenerationPct} onChange={(e) => rules({ lowGenerationPct: Number(e.target.value) })} />% abaixo da média</>}
-          subtitle="Compara o dia com a média dos 7 anteriores, após o fim do sol"
-        >
-          <Toggle on={s.rules.lowGeneration} onChange={(v) => rules({ lowGeneration: v })} label="Alertar baixa geração" />
-        </Row>
-        <Row icon="wb_twilight" iconClass="text-mint-dark" title="Início do dia" subtitle="Avisa no primeiro dado de geração do dia (não no nascer do sol, porque o inversor acorda depois). Se nada chegar no prazo abaixo, avisa com possíveis causas">
-          <Toggle on={s.rules.cycleStart} onChange={(v) => rules({ cycleStart: v })} label="Avisar início do dia" />
-        </Row>
-        <Row icon="hourglass_top" iconClass="text-mint-dark" title={<>Sem geração após {num("noStartMinutes", 30, 240)} min do início</>} subtitle="Prazo para avisar que nada chegou desde o amanhecer. Vale com o aviso de início do dia ligado">
-          <span className="w-12" aria-hidden />
-        </Row>
-        <Row icon="bedtime" iconClass="text-mint-dark" title="Fim do dia" subtitle="Avisa 30 min após o pôr do sol, com a geração do dia e o horário em que o relatório chega">
-          <Toggle on={s.rules.cycleEnd} onChange={(v) => rules({ cycleEnd: v })} label="Avisar fim do dia" />
-        </Row>
-        <Row icon="merge" iconClass="text-mint-dark" title="Fim do dia junto com o relatório" subtitle="Sem mensagem separada: o aviso de fim abre o relatório diário. Precisa do aviso de fim e do relatório ligados">
-          <Toggle on={s.rules.cycleEndInReport} onChange={(v) => rules({ cycleEndInReport: v })} label="Juntar fim do dia ao relatório" />
-        </Row>
-        <Row icon="check_circle" iconClass="text-mint-dark" title="Avisar quando normalizar" subtitle="Confirmação de restabelecimento">
-          <Toggle on={s.rules.recovered} onChange={(v) => rules({ recovered: v })} label="Avisar normalização" />
-        </Row>
+        <CardHeader title="Regras de Alerta" subtitle="Toque no (i) para entender cada uma" icon="warning" iconTone="sun" />
+        <Section title="Rotina e relatórios" icon="event_note" active={[r.cycleStart, r.cycleEnd, r.cycleEndInReport, r.recovered, r.weeklySummary, r.monthlyReport].filter(Boolean).length} total={6} defaultOpen>
+          <Row
+            icon="wb_twilight"
+            iconClass="text-mint-dark"
+            title="Início do dia"
+            subtitle="Avisa no primeiro dado de geração do dia, não no nascer do sol"
+            info={RULE_INFO.cycleStart}
+            fields={<span className={r.cycleStart ? "" : "opacity-50"}>Avisar se nada chegar após {num("noStartMinutes", 30, 240, !r.cycleStart)} min do amanhecer</span>}
+          >
+            <Toggle on={r.cycleStart} onChange={(v) => rules({ cycleStart: v })} label="Avisar início do dia" />
+          </Row>
+          <Row icon="bedtime" iconClass="text-mint-dark" title="Fim do dia" subtitle="Avisa 30 min após o pôr do sol, com a geração do dia" info={RULE_INFO.cycleEnd}>
+            <Toggle on={r.cycleEnd} onChange={(v) => rules({ cycleEnd: v })} label="Avisar fim do dia" />
+          </Row>
+          <Row icon="merge" iconClass="text-mint-dark" title="Fim do dia junto com o relatório" subtitle="Uma mensagem só. Precisa do fim do dia e do relatório ligados" info={RULE_INFO.cycleEndInReport}>
+            <Toggle on={r.cycleEndInReport} onChange={(v) => rules({ cycleEndInReport: v })} label="Juntar fim do dia ao relatório" />
+          </Row>
+          <Row icon="check_circle" iconClass="text-mint-dark" title="Avisar quando normalizar" subtitle="Confirmação de que o problema passou" info={RULE_INFO.recovered}>
+            <Toggle on={r.recovered} onChange={(v) => rules({ recovered: v })} label="Avisar normalização" />
+          </Row>
+          <Row icon="summarize" title="Resumo semanal" subtitle="Domingo, no horário do relatório diário" info={RULE_INFO.weeklySummary}>
+            <Toggle on={r.weeklySummary} onChange={(v) => rules({ weeklySummary: v })} label="Enviar resumo semanal" />
+          </Row>
+          <Row icon="calendar_month" title="Relatório mensal" subtitle="Dia 1, com o resumo do mês anterior" info={RULE_INFO.monthlyReport}>
+            <Toggle on={r.monthlyReport} onChange={(v) => rules({ monthlyReport: v })} label="Enviar relatório mensal" />
+          </Row>
+        </Section>
+
+        <Section title="Produção" icon="trending_down" active={[r.zeroGeneration, r.staleData, r.lowCapacity, r.lowGeneration, r.monthly].filter(Boolean).length} total={5}>
+          <Row icon="power_off" iconClass="text-danger" title="Sem gerar" subtitle="Inversor online, mas sem produzir em pleno dia" info={RULE_INFO.zeroGeneration} fields={<>Avisar após {num("zeroGenerationMinutes", 10, 180)} min sem gerar</>}>
+            <Toggle on={r.zeroGeneration} onChange={(v) => rules({ zeroGeneration: v })} label="Alertar geração zerada" />
+          </Row>
+          <Row icon="sync_problem" iconClass="text-danger" title="Sem dados novos" subtitle="Coleta ou API da Solplanet paradas" info={RULE_INFO.staleData} fields={<>Avisar após {num("staleMinutes", 6, 240)} min sem dados</>}>
+            <Toggle on={r.staleData} onChange={(v) => rules({ staleData: v })} label="Alertar falta de dados" />
+          </Row>
+          <Row icon="partly_cloudy_day" iconClass="text-sun-dark" title="Pico baixo" subtitle="Maior potência do dia vs kWp instalados, após o fim do sol" info={RULE_INFO.lowCapacity} fields={<>Pico abaixo de {num("lowCapacityPct", 5, 90)}% da capacidade</>}>
+            <Toggle on={r.lowCapacity} onChange={(v) => rules({ lowCapacity: v })} label="Alertar pico baixo" />
+          </Row>
+          <Row icon="trending_down" iconClass="text-sun-dark" title="Geração abaixo da média" subtitle="Compara o dia com a média dos 7 anteriores, após o fim do sol" info={RULE_INFO.lowGeneration} fields={<>Dia {num("lowGenerationPct", 5, 90)}% abaixo da média</>}>
+            <Toggle on={r.lowGeneration} onChange={(v) => rules({ lowGeneration: v })} label="Alertar baixa geração" />
+          </Row>
+          <Row icon="calendar_month" iconClass="text-sun-dark" title="Ritmo do mês" subtitle="A partir do dia 20. Também avisa a cada 500 kWh gerados" info={RULE_INFO.monthly} fields={<>Mês {num("monthlyPct", 5, 90)}% abaixo da média</>}>
+            <Toggle on={r.monthly} onChange={(v) => rules({ monthly: v })} label="Alertar ritmo do mês" />
+          </Row>
+        </Section>
+
+        <Section title="Equipamento" icon="solar_power" active={[r.offline, r.daylightOnly, r.inverterErrors, r.stringImbalance, r.gridVoltage, r.gridImportKwh > 0].filter(Boolean).length} total={6}>
+          <Row icon="cloud_off" title="Offline" subtitle="Inversor sem sinal de telemetria" info={RULE_INFO.offline} fields={<>Avisar após {num("offlineMinutes", 5, 240)} min sem sinal</>}>
+            <Toggle on={r.offline} onChange={(v) => rules({ offline: v })} label="Alertar offline" />
+          </Row>
+          <Row
+            icon="schedule"
+            title="Somente durante o dia"
+            subtitle={r.dayAuto ? "Nascer e pôr do sol da usina, atualizado todo dia" : "À noite o inversor desliga e aparece offline"}
+            info={RULE_INFO.daylightOnly}
+            fields={
+              <>
+                Entre <input type="time" disabled={r.dayAuto} className={`${inputCls} disabled:opacity-60`} value={r.dayStart} onChange={(e) => rules({ dayStart: e.target.value })} /> e{" "}
+                <input type="time" disabled={r.dayAuto} className={`${inputCls} disabled:opacity-60`} value={r.dayEnd} onChange={(e) => rules({ dayEnd: e.target.value })} />
+                <button
+                  type="button"
+                  onClick={() => rules({ dayAuto: !r.dayAuto })}
+                  aria-pressed={r.dayAuto}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${r.dayAuto ? "bg-sky-soft text-mint-dark" : "bg-sun-soft text-sun-dark"}`}
+                >
+                  {r.dayAuto ? "Auto" : "Manual"}
+                </button>
+              </>
+            }
+          >
+            <Toggle on={r.daylightOnly} onChange={(v) => rules({ daylightOnly: v })} label="Somente durante o dia" />
+          </Row>
+          <Row
+            icon="bolt"
+            iconClass="text-danger"
+            title="Erros e avisos do inversor"
+            subtitle="Falhas e status “alerta” reportados pela Solplanet"
+            info={RULE_INFO.inverterErrors}
+            fields={
+              <span className={r.inverterErrors ? "" : "opacity-50"}>
+                Status “alerta” só após {num("warningMinutes", 0, 120, !r.inverterErrors)} min (0 = na hora)
+              </span>
+            }
+          >
+            <Toggle on={r.inverterErrors} onChange={(v) => rules({ inverterErrors: v })} label="Alertar erros do inversor" />
+          </Row>
+          <Row icon="balance" iconClass="text-sun-dark" title="Strings desiguais" subtitle="Uma string rende bem menos que a outra (sombra, sujeira)" info={RULE_INFO.stringImbalance} fields={<>Quando uma ficar {num("stringImbalancePct", 10, 90)}% mais fraca</>}>
+            <Toggle on={r.stringImbalance} onChange={(v) => rules({ stringImbalance: v })} label="Alertar desequilíbrio de strings" />
+          </Row>
+          <Row icon="electrical_services" iconClass="text-sun-dark" title="Tensão da rede fora da faixa" subtitle="Perto do limite em que o inversor se desliga" info={RULE_INFO.gridVoltage}>
+            <Toggle on={r.gridVoltage} onChange={(v) => rules({ gridVoltage: v })} label="Alertar tensão da rede" />
+          </Row>
+          <Row icon="home" iconClass="text-sun-dark" title="Compra da rede" subtitle="Só com medidor. 0 desliga o alerta" info={RULE_INFO.gridImport} fields={<>Acima de {num("gridImportKwh", 0, 1000)} kWh por dia</>}>
+            <Toggle on={r.gridImportKwh > 0} onChange={(v) => rules({ gridImportKwh: v ? 20 : 0 })} label="Alertar consumo da rede" />
+          </Row>
+        </Section>
       </Card>
 
       {/* Relatório */}
