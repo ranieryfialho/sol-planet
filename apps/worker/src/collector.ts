@@ -9,6 +9,8 @@ import { notify, notifyAlert, type Who } from "./whatsapp";
 const OFFLINE = 0;
 const WARNING = 2;
 const ERROR = 3;
+/** "voltou ao normal" só vale para problemas de até 12 h */
+const MAX_RECOVERED_MIN = 12 * 60;
 const BAD = new Set([OFFLINE, WARNING, ERROR]);
 const KIND: Record<number, string> = { [OFFLINE]: "offline", [WARNING]: "warning", [ERROR]: "error" };
 const ICON: Record<number, string> = { [OFFLINE]: "🔌", [WARNING]: "⚠️", [ERROR]: "🚨" };
@@ -367,15 +369,30 @@ export class Collector {
       await this.db.insert(alerts).values({ plantId: id, accountId: this.accountId, kind, message: msg, occurredAt: now, notifiedAt: notified ? now : null });
     };
 
-    // à noite o inversor desliga e a usina aparece offline: não muda nada
-    if (status === OFFLINE && (!rules.offline || (rules.daylightOnly && !this.inDaylight(now)))) return;
+    const clear = async () => {
+      if (prev) await this.db.delete(kv).where(eq(kv.key, key));
+    };
+    // à noite o inversor desliga e a usina aparece offline; offline desligado também não avisa.
+    // Limpa o estado: senão o "estava ruim desde ontem" vira um "voltou ao normal após 1300 min" de manhã
+    if (status === OFFLINE && (!rules.offline || (rules.daylightOnly && !this.inDaylight(now)))) return clear();
+    // alerta/erro do fabricante só avisam com "erros do inversor" ligado
+    if ((status === WARNING || status === ERROR) && !rules.inverterErrors) return clear();
 
     if (BAD.has(status)) {
       const badSince = prev?.badSince ? new Date(prev.badSince) : now;
       const minutes = (now.getTime() - badSince.getTime()) / 60_000;
       const escalated = prev?.alertedAt && prev.status !== status;
       // offline e aviso esperam N min seguidos (oscilação curta não vira mensagem); erro avisa na hora
-      const ready = status === OFFLINE ? minutes >= rules.offlineMinutes : status === WARNING ? minutes >= rules.warningMinutes : true;
+      // alerta/erro com a usina gerando bem (>= 10% da capacidade) é aviso interno do inversor: não avisa
+      let lowPower = true;
+      if (status !== OFFLINE) {
+        const [plant] = await this.db.select({ kwp: plants.capacityKwp }).from(plants).where(eq(plants.id, id));
+        if (plant?.kwp) lowPower = powerW < plant.kwp * 1000 * 0.1;
+      }
+      const ready =
+        status === OFFLINE
+          ? minutes >= rules.offlineMinutes
+          : lowPower && (status === WARNING ? minutes >= rules.warningMinutes : true);
       let alertedAt = prev?.alertedAt ?? null;
 
       if (ready && (!alertedAt || escalated)) {
@@ -394,7 +411,9 @@ export class Collector {
 
     if (prev?.alertedAt) {
       const down = Math.round((now.getTime() - new Date(prev.badSince ?? prev.alertedAt).getTime()) / 60_000);
-      await alert("recovered", `✅ *${name}* voltou ao normal após ${down} min · ${fmtW(powerW)}`, rules.recovered);
+      // sem aviso se ainda não gera (0 W) ou se o problema é de outro dia: seria ruído
+      const meaningful = powerW > 0 && down < MAX_RECOVERED_MIN;
+      await alert("recovered", `✅ *${name}* voltou ao normal após ${down} min · ${fmtW(powerW)}`, rules.recovered && meaningful);
     }
     if (prev) await this.db.delete(kv).where(eq(kv.key, key));
   }

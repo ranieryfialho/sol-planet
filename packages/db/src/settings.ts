@@ -87,7 +87,7 @@ export function defaultSettings(env = process.env): Settings {
       dayStart: start,
       dayEnd: end,
       inverterErrors: true,
-      warningMinutes: 0,
+      warningMinutes: 15,
       recovered: true,
       lowGeneration: true,
       lowGenerationPct: 20,
