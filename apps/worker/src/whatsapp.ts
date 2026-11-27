@@ -1,7 +1,7 @@
 import { getKv, kv, type Db, type Recipient, type Settings } from "@sol/db";
-import { evolutionFor } from "@sol/whatsapp";
+import { wahaFor } from "@sol/whatsapp";
 
-/** Conta que envia: o login dá nome legível à instância da Evolution. */
+/** Conta que envia: o login dá nome legível à sessão do WAHA. */
 export interface Who {
   id: number;
   login: string;
@@ -30,25 +30,25 @@ export async function notifyAlert(db: Db, who: Who, settings: Settings, plantId:
   if (fresh.length) await send(who, text, fresh);
 }
 
-/** Envia texto para os destinatários ativos da conta, pelo WhatsApp dela. Sem Evolution configurada, só loga. */
+/** Envia texto para os destinatários ativos da conta, pelo WhatsApp dela. Sem WAHA configurado, só loga. */
 export async function notify(who: Who, text: string, settings: Settings) {
   await send(who, text, settings.recipients);
 }
 
 async function send(who: Who, text: string, recipients: Recipient[]) {
-  const evolution = evolutionFor(who.id, who.login);
-  if (!evolution.configured) {
+  const waha = wahaFor(who.id, who.login);
+  if (!waha.configured) {
     console.log(`[whatsapp desativado]\n${text}`);
     return;
   }
-  const { targets } = await evolution.resolveTargets(recipients);
+  const { targets } = await waha.resolveTargets(recipients);
   if (!targets.length) {
     console.log(`[sem destinatário e WhatsApp desconectado]\n${text}`);
     return;
   }
   for (const r of targets) {
     try {
-      await evolution.sendText(r.to, text);
+      await waha.sendText(r.to, text);
     } catch (e) {
       console.error(`falha ao enviar para ${r.name}:`, e);
     }

@@ -120,6 +120,9 @@ type NumRule = {
 
 const inputCls = "rounded-full bg-surface px-3 py-1 text-center font-semibold shadow-pill outline-none focus:ring-2 focus:ring-mint/40";
 
+/** Intervalo para buscar um QR code novo (o WAHA troca o código a cada 20 s, depois do primeiro). */
+const QR_REFRESH_MS = 15_000;
+
 export function SettingsPanel({ initial, whatsapp, lastReportAt, account }: { initial: Settings; whatsapp: WaInfo; lastReportAt: string | null; account?: string }) {
   const [s, setS] = useState(initial);
   const [saving, startSave] = useTransition();
@@ -190,7 +193,19 @@ export function SettingsPanel({ initial, whatsapp, lastReportAt, account }: { in
     return () => clearInterval(id);
   }, [qr]);
 
-  // contatos chegam na hora; grupos demoram (a Evolution leva ~1 min com muitos grupos) e entram quando prontos
+  // O QR code vence em segundos: enquanto estiver na tela, busca um novo periodicamente.
+  const qrOpen = qr !== null;
+  useEffect(() => {
+    if (!qrOpen) return;
+    const id = setInterval(async () => {
+      const r = await connectWhatsApp().catch(() => null);
+      // se o QR saiu da tela enquanto a resposta vinha, não o traz de volta
+      if (r?.qr) setQr((current) => (current ? r.qr! : current));
+    }, QR_REFRESH_MS);
+    return () => clearInterval(id);
+  }, [qrOpen]);
+
+  // contatos chegam na hora; grupos podem demorar (contas com muitos grupos) e entram quando prontos
   const [groupsLoading, setGroupsLoading] = useState(false);
   const loadTargets = (force = false) => {
     listContacts().then((contacts) => setTargets((t) => ({ groups: t?.groups ?? [], contacts })));
@@ -235,14 +250,14 @@ export function SettingsPanel({ initial, whatsapp, lastReportAt, account }: { in
 
       {/* WhatsApp */}
       <Card className="!rounded-[2rem]">
-        <CardHeader title="WhatsApp Notificações" subtitle="Alertas instantâneos via Evolution API" icon="chat" />
+        <CardHeader title="WhatsApp Notificações" subtitle="Alertas instantâneos pelo seu WhatsApp" icon="chat" />
         <div className="flex flex-col gap-3 rounded-2xl bg-surface-low p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <span className={`h-2.5 w-2.5 rounded-full ${connected ? "bg-mint" : wa.configured ? "bg-sun" : "bg-ink-3"}`} />
             <div>
               <p className="font-semibold">{connected ? "Conectado" : wa.configured ? "Desconectado" : "Não configurado"}</p>
               <p className="text-[13px] text-ink-2">
-                {connected ? (wa.number ? `+${wa.number}` : "Instância ativa") : wa.configured ? "Conecte o seu número para receber os alertas" : "Defina EVOLUTION_API_KEY no .env"}
+                {connected ? (wa.number ? `+${wa.number}` : "Sessão ativa") : wa.configured ? "Conecte o seu número para receber os alertas" : "Defina WAHA_API_KEY no .env"}
               </p>
             </div>
           </div>
@@ -264,7 +279,7 @@ export function SettingsPanel({ initial, whatsapp, lastReportAt, account }: { in
           <div className="mt-4 flex flex-col items-center gap-3 rounded-2xl bg-surface-low p-5 text-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={qr} alt="QR code do WhatsApp" className="h-56 w-56 rounded-xl bg-white p-2" />
-            <p className="text-sm text-ink-2">WhatsApp → Aparelhos conectados → Conectar aparelho. Use um número secundário. O QR expira em cerca de 40 s: se vencer, toque em Reconectar.</p>
+            <p className="text-sm text-ink-2">WhatsApp → Aparelhos conectados → Conectar aparelho. Use um número secundário. O código se renova sozinho a cada poucos segundos.</p>
             <button
               type="button"
               onClick={() => startSave(async () => { const st = await whatsappState(); setWa({ ...wa, ...st }); if (st.state === "open") setQr(null); })}

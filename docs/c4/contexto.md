@@ -13,7 +13,7 @@ C4Context
 
     System_Ext(solplanet, "API cloud Solplanet", "Dados da usina e do inversor (cliente via engenharia reversa do app)")
     System_Ext(livoltek, "API cloud Livoltek", "Mesmo papel, para usinas com inversor Livoltek")
-    System_Ext(evolution, "Evolution API", "Gateway de WhatsApp, pareado por QR code")
+    System_Ext(waha, "WAHA", "Gateway de WhatsApp, pareado por QR code")
     System_Ext(meteo, "Open-Meteo", "Previsão do tempo exibida no dashboard")
     System_Ext(maps, "Google Maps Static / OpenStreetMap", "Mapa de fundo da cena da casa (opcional)")
 
@@ -21,8 +21,8 @@ C4Context
     Rel(ia, solplanet_app, "Consulta a usina", "MCP sobre HTTPS, OAuth 2.1 + PKCE")
     Rel(solplanet_app, solplanet, "Coleta leituras e status", "HTTPS, requisições assinadas")
     Rel(solplanet_app, livoltek, "Coleta leituras e status", "HTTPS")
-    Rel(solplanet_app, evolution, "Envia alertas e relatório", "HTTP")
-    Rel(evolution, dono, "Entrega as mensagens", "WhatsApp")
+    Rel(solplanet_app, waha, "Envia alertas e relatório", "HTTP")
+    Rel(waha, dono, "Entrega as mensagens", "WhatsApp")
     Rel(solplanet_app, meteo, "Busca a previsão", "HTTPS")
     Rel(solplanet_app, maps, "Busca o mapa", "HTTPS")
 ```

@@ -1,21 +1,20 @@
-/** Cliente mínimo da Evolution API v2 (WhatsApp não oficial, self-hosted). */
-export interface EvolutionConfig {
+/** Cliente mínimo do WAHA (WhatsApp não oficial, self-hosted; engine GOWS). */
+export interface WahaConfig {
   url: string;
   apiKey: string;
-  instance: string;
+  session: string;
 }
 
 export type ConnectionState = "open" | "connecting" | "close" | "unknown";
 
-export function evolutionFromEnv(env = process.env): EvolutionConfig {
+export function wahaFromEnv(env = process.env): Omit<WahaConfig, "session"> {
   return {
-    url: (env.EVOLUTION_URL ?? "http://localhost:8080").replace(/\/$/, ""),
-    apiKey: env.EVOLUTION_API_KEY ?? "",
-    instance: env.EVOLUTION_INSTANCE ?? "solplanet",
+    url: (env.WAHA_URL ?? "http://localhost:3015").replace(/\/$/, ""),
+    apiKey: env.WAHA_API_KEY ?? "",
   };
 }
 
-/** Parte do login usada no nome da instância: legível e só com [a-z0-9]. Telefone vira "tel" + 4 últimos dígitos. */
+/** Parte do login usada no nome da sessão: legível e só com [a-z0-9]. Telefone vira "tel" + 4 últimos dígitos. */
 function slug(login: string) {
   const local = login.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
   if (/^\d+$/.test(local)) return `tel${local.slice(-4)}`;
@@ -23,18 +22,19 @@ function slug(login: string) {
 }
 
 /**
- * Cada conta do dashboard tem a própria instância (e, portanto, o próprio número de WhatsApp), nomeada para
- * dar para saber de quem é no Manager da Evolution: `solar-<login>-<id>`, ex.: solar-ranieryfialho-1.
- * O prefixo evita colidir com instâncias de outros apps no mesmo servidor; o id garante nome único.
+ * Cada conta do dashboard tem a própria sessão (e, portanto, o próprio número de WhatsApp), nomeada para
+ * dar para saber de quem é no painel do WAHA: `solar-<login>-<id>`, ex.: solar-ranieryfialho-1.
+ * O prefixo evita colidir com sessões de outros apps no mesmo servidor; o id garante nome único.
+ * O WAHA aceita até 54 caracteres.
  */
-export function instanceName(accountId: number, login: string, env = process.env) {
-  return `${env.EVOLUTION_INSTANCE_PREFIX ?? "solar"}-${slug(login)}-${accountId}`;
+export function sessionName(accountId: number, login: string, env = process.env) {
+  return `${env.WAHA_SESSION_PREFIX ?? "solar"}-${slug(login)}-${accountId}`;
 }
 
 export const AUTO_FOOTER = "\n\n_🤖 Mensagem automática do monitor Solar. Não precisa responder._";
 
-export function evolutionFor(accountId: number, login: string, env = process.env) {
-  return new Evolution({ ...evolutionFromEnv(env), instance: instanceName(accountId, login, env) });
+export function wahaFor(accountId: number, login: string, env = process.env) {
+  return new Waha({ ...wahaFromEnv(env), session: sessionName(accountId, login, env) });
 }
 
 export interface WaContact {
@@ -49,12 +49,29 @@ export interface SendTarget {
   enabled: boolean;
 }
 
-// número pareado por instância, em memória (evita uma consulta de estado a cada mensagem)
+// número pareado por sessão, em memória (evita uma consulta de estado a cada mensagem)
 const ownNumbers = new Map<string, { at: number; number: string }>();
 const OWN_NUMBER_TTL_MS = 10 * 60_000;
 
-export class Evolution {
-  constructor(readonly cfg: EvolutionConfig = evolutionFromEnv()) {}
+const PAIRING_MAX_POLLS = 20;
+
+/** Estado da sessão no WAHA; NOT_FOUND quando ela ainda não foi criada. */
+interface Session {
+  status: string;
+  number?: string;
+}
+
+export class WahaError extends Error {
+  constructor(readonly status: number, path: string, body: string) {
+    super(`WAHA ${status} ${path}: ${body.slice(0, 300)}`);
+  }
+}
+
+export class Waha {
+  constructor(
+    readonly cfg: WahaConfig,
+    private readonly pollMs = 1000,
+  ) {}
 
   get configured() {
     return Boolean(this.cfg.apiKey);
@@ -63,86 +80,113 @@ export class Evolution {
   private async call<T = any>(path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
     const res = await fetch(`${this.cfg.url}${path}`, {
       ...init,
-      headers: { "content-type": "application/json", apikey: this.cfg.apiKey, ...init?.headers },
-      signal: AbortSignal.timeout(init?.timeoutMs ?? 20_000),
+      headers: { "content-type": "application/json", accept: "application/json", "x-api-key": this.cfg.apiKey, ...init?.headers },
+      signal: AbortSignal.timeout(init?.timeoutMs ?? 30_000),
     });
-    if (!res.ok) throw new Error(`Evolution ${res.status} ${path}: ${(await res.text()).slice(0, 300)}`);
+    if (!res.ok) throw new WahaError(res.status, path, await res.text());
     return res.json() as Promise<T>;
   }
 
+  /** O envio precisa do chatId real: números brasileiros podem estar registrados com ou sem o 9º dígito. */
+  private async chatId(to: string): Promise<string> {
+    if (to.endsWith("@s.whatsapp.net")) return to.replace("@s.whatsapp.net", "@c.us");
+    if (to.includes("@")) return to;
+    const query = new URLSearchParams({ phone: to.replace(/\D/g, ""), session: this.cfg.session });
+    const found = await this.call<{ numberExists?: boolean; chatId?: string }>(`/api/contacts/check-exists?${query}`);
+    if (!found.numberExists || !found.chatId) throw new Error(`o número ${to} não foi encontrado no WhatsApp`);
+    return found.chatId;
+  }
+
   /** Toda mensagem sai com o aviso de que é automática: quem recebe sabe de onde veio e que não adianta responder. */
-  sendText(number: string, text: string) {
-    return this.call(`/message/sendText/${this.cfg.instance}`, { method: "POST", body: JSON.stringify({ number, text: `${text}${AUTO_FOOTER}` }) });
+  async sendText(to: string, text: string) {
+    const chatId = await this.chatId(to);
+    return this.call(`/api/sendText`, { method: "POST", body: JSON.stringify({ session: this.cfg.session, chatId, text: `${text}${AUTO_FOOTER}` }) });
+  }
+
+  private async session(): Promise<Session> {
+    try {
+      const r = await this.call<{ status?: string; me?: { id?: string } | null }>(`/api/sessions/${this.cfg.session}`);
+      return { status: r.status ?? "STOPPED", number: r.me?.id?.split("@")[0] };
+    } catch (e) {
+      if (e instanceof WahaError && e.status === 404) return { status: "NOT_FOUND" };
+      throw e;
+    }
   }
 
   async state(): Promise<{ state: ConnectionState; number?: string }> {
     try {
-      const r = await this.call<{ instance?: { state?: string } }>(`/instance/connectionState/${this.cfg.instance}`);
-      const state = (r.instance?.state ?? "unknown") as ConnectionState;
-      let number: string | undefined;
-      if (state === "open") {
-        const list = await this.call<any[]>(`/instance/fetchInstances?instanceName=${this.cfg.instance}`).catch(() => []);
-        const owner: string | undefined = list?.[0]?.ownerJid ?? list?.[0]?.instance?.owner;
-        number = owner?.split("@")[0];
-      }
-      return { state, number };
+      const { status, number } = await this.session();
+      if (status === "WORKING") return { state: "open", number };
+      return { state: ["STOPPED", "FAILED", "NOT_FOUND"].includes(status) ? "close" : "connecting" };
     } catch {
       return { state: "unknown" };
     }
   }
 
-  /** Cria a instância se não existir e devolve o QR code (data URL) para parear. */
+  private action(name: "start" | "stop" | "restart" | "logout") {
+    return this.call(`/api/sessions/${this.cfg.session}/${name}`, { method: "POST" });
+  }
+
+  /**
+   * Devolve o QR code (data URL) para parear: cria a sessão se não existir, inicia a que está parada,
+   * reinicia a que falhou (QR vencido sem leitura) e espera o WAHA gerar o código.
+   */
   async connect(): Promise<{ qr?: string; state: ConnectionState }> {
-    const { state } = await this.state();
-    if (state === "open") return { state };
-    if (state === "unknown") {
-      await this.call(`/instance/create`, {
-        method: "POST",
-        body: JSON.stringify({ instanceName: this.cfg.instance, integration: "WHATSAPP-BAILEYS", qrcode: true }),
-      }).catch(() => undefined);
+    let { status } = await this.session();
+    if (status === "NOT_FOUND") {
+      // 422: outra requisição criou a sessão nesse meio tempo
+      await this.call(`/api/sessions`, { method: "POST", body: JSON.stringify({ name: this.cfg.session, start: true }) }).catch((e) => {
+        if (!(e instanceof WahaError && e.status === 422)) throw e;
+      });
     }
-    const r = await this.call<{ base64?: string }>(`/instance/connect/${this.cfg.instance}`);
-    return { qr: r.base64, state: "connecting" };
+    if (status === "STOPPED") await this.action("start");
+    if (status === "FAILED") await this.action("restart");
+
+    for (let poll = 0; poll < PAIRING_MAX_POLLS && status !== "WORKING" && status !== "SCAN_QR_CODE"; poll++) {
+      await new Promise((resolve) => setTimeout(resolve, this.pollMs));
+      status = (await this.session()).status;
+    }
+    if (status === "WORKING") return { state: "open" };
+    if (status !== "SCAN_QR_CODE") throw new Error(`o WAHA ainda não gerou o QR code (estado: ${status}); tente de novo`);
+
+    const r = await this.call<{ mimetype?: string; data?: string }>(`/api/${this.cfg.session}/auth/qr?format=image`);
+    return { qr: r.data ? `data:${r.mimetype ?? "image/png"};base64,${r.data}` : undefined, state: "connecting" };
   }
 
-  /** A doc promete um array puro; aceita também o formato envelopado ({ data: [...] }). */
-  private static rows(raw: unknown): any[] {
-    return Array.isArray(raw) ? raw : Array.isArray((raw as { data?: unknown })?.data) ? (raw as { data: any[] }).data : [];
-  }
-
+  /** A engine GOWS devolve JID/Name; as outras, id/subject. */
   async listGroups(): Promise<{ id: string; subject: string }[]> {
-    // a Evolution busca os metadados de cada grupo: com ~100 grupos passa de 20 s
-    const raw = await this.call(`/group/fetchAllGroups/${this.cfg.instance}?getParticipants=false`, { timeoutMs: 120_000 });
-    return Evolution.rows(raw)
-      .map((g) => ({ id: String(g.id ?? g.jid ?? ""), subject: String(g.subject ?? g.name ?? "") }))
-      .filter((g) => g.id);
+    // com muitos grupos a listagem pode demorar
+    const raw = await this.call<unknown>(`/api/${this.cfg.session}/groups?exclude=participants`, { timeoutMs: 120_000 });
+    const rows: any[] = Array.isArray(raw) ? raw : Object.values((raw ?? {}) as object);
+    return rows.map((g) => ({ id: String(g.JID ?? g.id ?? ""), subject: String(g.Name ?? g.subject ?? "") })).filter((g) => g.id);
   }
 
   /**
    * Contatos da agenda do número pareado (só pessoas; grupos vêm de listGroups).
-   * A Evolution devolve tudo que o número já viu (milhares de entradas, incluindo membros de grupos e
-   * @lid); `isSaved` separa quem está de fato na agenda.
+   * O WAHA devolve tudo que o número já viu (milhares de entradas, incluindo membros de grupos e @lid);
+   * só quem está salvo na agenda vem com `name` (o `pushname` é o nome que a própria pessoa escolheu).
    */
   async listContacts(): Promise<WaContact[]> {
-    const raw = await this.call(`/chat/findContacts/${this.cfg.instance}`, { method: "POST", body: JSON.stringify({ where: {} }) });
+    const query = new URLSearchParams({ session: this.cfg.session });
+    const rows = await this.call<any[]>(`/api/contacts/all?${query}`, { timeoutMs: 60_000 });
     const byNumber = new Map<string, WaContact>();
-    for (const c of Evolution.rows(raw)) {
-      const jid: string = c.remoteJid ?? c.id ?? "";
-      // @lid, @g.us, newsletter e bots ficam de fora: sendText precisa do número
-      if (!jid.endsWith("@s.whatsapp.net") || c.isSaved === false) continue;
-      const number = jid.split("@")[0];
-      if (!byNumber.has(number)) byNumber.set(number, { number, name: c.pushName || c.name || `+${number}` });
+    for (const c of rows) {
+      const id: string = c.id ?? "";
+      // @lid, @g.us, newsletter e bots ficam de fora: o destinatário é salvo pelo número
+      if (!id.endsWith("@c.us") || !c.name) continue;
+      const number = id.split("@")[0];
+      if (!byNumber.has(number)) byNumber.set(number, { number, name: c.name });
     }
     return [...byNumber.values()].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   }
 
-  /** Número pareado nesta instância (com cache); undefined se o WhatsApp não está conectado. */
+  /** Número pareado nesta sessão (com cache); undefined se o WhatsApp não está conectado. */
   async ownNumber(): Promise<string | undefined> {
-    const hit = ownNumbers.get(this.cfg.instance);
+    const hit = ownNumbers.get(this.cfg.session);
     if (hit && Date.now() - hit.at < OWN_NUMBER_TTL_MS) return hit.number;
     const { state, number } = await this.state();
     if (state !== "open" || !number) return undefined;
-    ownNumbers.set(this.cfg.instance, { at: Date.now(), number });
+    ownNumbers.set(this.cfg.session, { at: Date.now(), number });
     return number;
   }
 
@@ -157,9 +201,10 @@ export class Evolution {
     return me ? { targets: [{ to: me, name: "Você", enabled: true }], self: true } : { targets: [], self: false };
   }
 
-  /** Desconecta o número (a instância continua; dá para parear de novo). */
-  logout() {
-    ownNumbers.delete(this.cfg.instance);
-    return this.call(`/instance/logout/${this.cfg.instance}`, { method: "DELETE" });
+  /** Desconecta o número. O logout reinicia a sessão (voltaria a gerar QR codes), por isso o stop em seguida. */
+  async logout() {
+    ownNumbers.delete(this.cfg.session);
+    await this.action("logout");
+    await this.action("stop");
   }
 }
