@@ -16,15 +16,15 @@ C4Container
     }
 
     System_Ext(solplanet, "API Solplanet / Livoltek", "Dados do inversor")
-    System_Ext(evolution, "Evolution API", "WhatsApp")
+    System_Ext(waha, "WAHA", "WhatsApp")
 
     Rel(dono, web, "Dashboard e API", "HTTPS, cookie de sessão")
     Rel(ia, web, "Ferramentas MCP", "HTTPS, Bearer OAuth 2.1")
     Rel(web, db, "Lê e grava", "SQL (Drizzle)")
     Rel(worker, db, "Grava leituras e alertas", "SQL (Drizzle)")
     Rel(worker, solplanet, "Coleta", "HTTPS")
-    Rel(worker, evolution, "Envia mensagens", "HTTP")
-    Rel(web, evolution, "Pareia e lista contatos", "HTTP")
+    Rel(worker, waha, "Envia mensagens", "HTTP")
+    Rel(web, waha, "Pareia e lista contatos", "HTTP")
 ```
 
 ## Como isso aparece no repositório
@@ -40,4 +40,4 @@ Bibliotecas compartilhadas, dentro de `packages/`: `solplanet`, `livoltek`, `wha
 ## Por ambiente
 
 - **Avaliação/local** ([docker-compose.local.yml](../../docker-compose.local.yml)): Postgres, um contêiner `seed` que popula dados simulados, e o `web`. O `worker` só sobe com `--profile coleta`.
-- **Produção** ([docker-compose.yml](../../docker-compose.yml)): `web` e `worker` ligados por rede externa ao Postgres da VPS. A Evolution API é opcional (`--profile evolution`).
+- **Produção** ([docker-compose.yml](../../docker-compose.yml)): `web` e `worker` ligados por rede externa ao Postgres da VPS. O WAHA é opcional (`--profile waha`).

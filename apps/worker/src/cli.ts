@@ -13,7 +13,7 @@ import { runMigrations } from "@sol/db/migrate";
 import { SolplanetClient } from "@sol/solplanet";
 import { config } from "./config";
 import { buildDailyReport } from "./report";
-import { evolutionFor } from "@sol/whatsapp";
+import { wahaFor } from "@sol/whatsapp";
 import { notify } from "./whatsapp";
 
 const cmd = process.argv[2];
@@ -154,7 +154,7 @@ switch (cmd) {
   }
   case "groups": {
     const who = await primary(await db());
-    for (const g of await evolutionFor(who.id, who.login).listGroups()) console.log(`${g.id}\t${g.subject}`);
+    for (const g of await wahaFor(who.id, who.login).listGroups()) console.log(`${g.id}\t${g.subject}`);
     break;
   }
   case "test": {

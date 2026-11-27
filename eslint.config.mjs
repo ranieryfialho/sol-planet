@@ -33,7 +33,7 @@ export default defineConfig(
     },
   },
   {
-    // Clientes de APIs externas sem documentação pública (Solplanet e Livoltek por engenharia reversa, Evolution):
+    // Clientes de APIs externas sem documentação pública (Solplanet e Livoltek por engenharia reversa, WAHA):
     // as respostas chegam como JSON sem contrato estável, então `any` é a fronteira consciente. O resto do código é tipado.
     files: ["packages/solplanet/**", "packages/livoltek/**", "packages/whatsapp/**", "apps/worker/src/{collector,livoltek-collector,cli}.ts"],
     rules: { "@typescript-eslint/no-explicit-any": "off" },

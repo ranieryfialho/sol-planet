@@ -63,7 +63,7 @@ O Swagger é a flag `FEATURE_DOCS`: **ligada no staging** pelo compose e **desli
 | `GET /api/alertas?tipo=invalido` | sim | 400 |
 | `GET /api/usinas/999001/resumo` ou `/api/alertas` | **não** | 401 `não autenticado` |
 
-Fora do que se avalia: `GET /api/whatsapp/groups` responde `[]` (o staging não tem Evolution API), e o `POST /oauth/register` grava um cliente OAuth (por isso ficou de fora das verificações automáticas).
+Fora do que se avalia: `GET /api/whatsapp/groups` responde `[]` (o staging não tem WAHA), e o `POST /oauth/register` grava um cliente OAuth (por isso ficou de fora das verificações automáticas).
 
 ### Ver o M3 no staging (logs, métrica e SLO)
 

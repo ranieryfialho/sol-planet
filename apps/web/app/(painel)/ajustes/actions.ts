@@ -3,11 +3,11 @@
 import { getSettings, saveSettings, type Settings } from "@sol/db";
 import type { WaContact } from "@sol/whatsapp";
 import { revalidatePath } from "next/cache";
-import { currentAccountId, currentEvolution } from "@/lib/account";
+import { currentAccountId, currentWaha } from "@/lib/account";
 import { getDb } from "@/lib/db";
 
-/** WhatsApp da conta logada: cada conta pareia o próprio número (instância própria). */
-const wa = currentEvolution;
+/** WhatsApp da conta logada: cada conta pareia o próprio número (sessão própria). */
+const wa = currentWaha;
 
 const clamp = (v: unknown, min: number, max: number, fallback: number) => {
   const n = Number(v);
@@ -50,16 +50,16 @@ export async function updateSettings(next: Settings) {
 }
 
 export async function sendTest(): Promise<{ ok: boolean; message: string }> {
-  const evolution = await wa();
-  if (!evolution.configured) return { ok: false, message: "EVOLUTION_API_KEY não configurada." };
-  if ((await evolution.state()).state !== "open") return { ok: false, message: "Conecte o WhatsApp antes de testar." };
+  const waha = await wa();
+  if (!waha.configured) return { ok: false, message: "WAHA_API_KEY não configurada." };
+  if ((await waha.state()).state !== "open") return { ok: false, message: "Conecte o WhatsApp antes de testar." };
   const { recipients } = await getSettings(getDb(), await currentAccountId());
-  const { targets, self } = await evolution.resolveTargets(recipients);
+  const { targets, self } = await waha.resolveTargets(recipients);
   if (!targets.length) return { ok: false, message: "Nenhum destinatário ativo." };
   const errors: string[] = [];
   for (const r of targets) {
     try {
-      await evolution.sendText(r.to, "👋 Teste do monitor Solar: as notificações estão funcionando.");
+      await waha.sendText(r.to, "👋 Teste do monitor Solar: as notificações estão funcionando.");
     } catch {
       errors.push(r.name);
     }
@@ -69,12 +69,12 @@ export async function sendTest(): Promise<{ ok: boolean; message: string }> {
     : { ok: true, message: self ? "Enviado para o seu próprio número (nenhum destinatário cadastrado)." : `Enviado para ${targets.length} destinatário(s).` };
 }
 
-/** Cria a instância da conta se preciso e devolve o QR code para parear o número dela. */
+/** Cria a sessão da conta se preciso e devolve o QR code para parear o número dela. */
 export async function connectWhatsApp(): Promise<{ qr?: string; state: string; error?: string }> {
-  const evolution = await wa();
-  if (!evolution.configured) return { state: "unknown", error: "EVOLUTION_API_KEY não configurada." };
+  const waha = await wa();
+  if (!waha.configured) return { state: "unknown", error: "WAHA_API_KEY não configurada." };
   try {
-    return await evolution.connect();
+    return await waha.connect();
   } catch (e) {
     return { state: "unknown", error: e instanceof Error ? e.message : String(e) };
   }
@@ -95,7 +95,7 @@ export async function disconnectWhatsApp(): Promise<{ ok: boolean; message: stri
 
 /** Contatos da agenda do número pareado (rápido: < 1 s). Os grupos vêm de /api/whatsapp/groups, que é lento. */
 export async function listContacts(): Promise<WaContact[]> {
-  const evolution = await currentEvolution();
-  if (!evolution.configured) return [];
-  return evolution.listContacts().catch(() => []);
+  const waha = await currentWaha();
+  if (!waha.configured) return [];
+  return waha.listContacts().catch(() => []);
 }

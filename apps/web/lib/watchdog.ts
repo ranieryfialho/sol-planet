@@ -1,5 +1,5 @@
 import { accountKey, alerts, getKv, getSettings, kv, listAccounts, plantIdsOf, readings } from "@sol/db";
-import { evolutionFor } from "@sol/whatsapp";
+import { wahaFor } from "@sol/whatsapp";
 import { inArray, max } from "drizzle-orm";
 import { getDb } from "./db";
 
@@ -38,14 +38,14 @@ async function check() {
 }
 
 async function send(accountId: number, login: string, text: string, recipients: { to: string; name: string; enabled: boolean }[]) {
-  const evolution = evolutionFor(accountId, login);
-  if (!evolution.configured) return console.log(`[whatsapp desativado]\n${text}`);
+  const waha = wahaFor(accountId, login);
+  if (!waha.configured) return console.log(`[whatsapp desativado]\n${text}`);
   // sem destinatários, vai para o próprio número conectado
-  const { targets } = await evolution.resolveTargets(recipients);
+  const { targets } = await waha.resolveTargets(recipients);
   if (!targets.length) return console.log(`[sem destinatário e WhatsApp desconectado]\n${text}`);
   for (const r of targets) {
     try {
-      await evolution.sendText(r.to, text);
+      await waha.sendText(r.to, text);
     } catch (e) {
       console.error(`watchdog: falha ao enviar para ${r.name}:`, e);
     }

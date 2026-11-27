@@ -1,7 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { evolutionFor } from "@sol/whatsapp";
+import { wahaFor } from "@sol/whatsapp";
 import { cache } from "react";
 import { readSession, SESSION_COOKIE } from "./session";
 
@@ -15,9 +15,9 @@ export async function currentAccountId() {
   return s.aid;
 }
 
-/** WhatsApp (instância da Evolution) da conta logada. */
-export async function currentEvolution() {
+/** WhatsApp (sessão do WAHA) da conta logada. */
+export async function currentWaha() {
   const s = await currentSession();
   if (!s) redirect("/login");
-  return evolutionFor(s.aid, s.sub);
+  return wahaFor(s.aid, s.sub);
 }

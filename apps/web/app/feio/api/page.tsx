@@ -31,13 +31,15 @@ const LIVOLTEK: Rota[] = [
   { m: "POST", path: "/ctrller-manager/alarm/findAllFilter", params: "JSON: powerStationFilter[id], start, pageSize, level, alarmType, sn", uso: "alarmes da usina", quem: "packages/livoltek (probe)" },
 ];
 
-const EVOLUTION: Rota[] = [
-  { m: "POST", path: "/message/sendText/{instance}", params: "number, text", uso: "envia mensagem no WhatsApp", quem: "worker + botão Testar" },
-  { m: "GET", path: "/instance/connectionState/{instance}", params: "-", uso: "estado da conexão (open/close)", quem: "Ajustes" },
-  { m: "GET", path: "/instance/fetchInstances?instanceName=", params: "instanceName", uso: "número conectado (ownerJid)", quem: "Ajustes" },
-  { m: "POST", path: "/instance/create", params: "instanceName, qrcode, integration", uso: "cria a instância do WhatsApp", quem: "Ajustes → Conectar" },
-  { m: "GET", path: "/instance/connect/{instance}", params: "-", uso: "QR code (base64) para parear", quem: "Ajustes → Conectar" },
-  { m: "GET", path: "/group/fetchAllGroups/{instance}?getParticipants=false", params: "getParticipants", uso: "lista de grupos", quem: "Ajustes (admin)" },
+const WAHA: Rota[] = [
+  { m: "GET", path: "/api/contacts/check-exists", params: "phone, session", uso: "chatId certo do número (9º dígito)", quem: "worker + botão Testar" },
+  { m: "POST", path: "/api/sendText", params: "session, chatId, text", uso: "envia mensagem no WhatsApp", quem: "worker + botão Testar" },
+  { m: "GET", path: "/api/sessions/{session}", params: "-", uso: "estado da conexão e número conectado", quem: "Ajustes" },
+  { m: "POST", path: "/api/sessions", params: "name, start", uso: "cria a sessão do WhatsApp", quem: "Ajustes → Conectar" },
+  { m: "POST", path: "/api/sessions/{session}/start|restart|logout|stop", params: "-", uso: "inicia, reinicia ou desconecta a sessão", quem: "Ajustes" },
+  { m: "GET", path: "/api/{session}/auth/qr?format=image", params: "format", uso: "QR code (base64) para parear", quem: "Ajustes → Conectar" },
+  { m: "GET", path: "/api/{session}/groups?exclude=participants", params: "exclude", uso: "lista de grupos", quem: "Ajustes (admin)" },
+  { m: "GET", path: "/api/contacts/all", params: "session", uso: "contatos salvos na agenda", quem: "Ajustes" },
 ];
 
 const WEB = [
@@ -80,7 +82,7 @@ export default function FeioApi() {
         host="https://www.livoltek-portal.com (Brasil) | headers: Authorization: Bearer <access_token>, language, timeZone | sucesso: msg_code=operate.success"
         rotas={LIVOLTEK}
       />
-      <Tabela titulo="EVOLUTION (WhatsApp)" host="EVOLUTION_URL (header apikey)" rotas={EVOLUTION} />
+      <Tabela titulo="WAHA (WhatsApp)" host="WAHA_URL (header X-Api-Key)" rotas={WAHA} />
       <h2>== DASHBOARD (rotas deste app; nao ha /api, tudo e pagina + server action) ==</h2>
       <pre>{WEB.map(([p, d]) => `${p.padEnd(44)} ${d}`).join("\n")}</pre>
       <h2>== NOTAS ==</h2>

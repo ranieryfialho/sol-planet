@@ -177,7 +177,7 @@ Get-Content k6/smoke.js | docker run --rm -i -p 5665:5665 -e K6_WEB_DASHBOARD=tr
 | M4 | Smoke k6 com p95 medido | [k6/smoke.js](k6/smoke.js). Resultado: **p95 = 24,14 ms**, 0% de erro ([docs/desempenho.md](docs/desempenho.md)) |
 | Entrega | `CONTRIBUTORS.md` e uso de IA | [CONTRIBUTORS.md](CONTRIBUTORS.md), [docs/ia.md](docs/ia.md) |
 
-**Além do escopo B** (já existia antes da adaptação e não faz parte do que é avaliado): dashboard com cena 3D, alertas e relatórios no WhatsApp (Evolution API), servidor MCP com OAuth 2.1 para apps de IA, coletor Livoltek e deploy contínuo na VPS ([deploy.yml](.github/workflows/deploy.yml)).
+**Além do escopo B** (já existia antes da adaptação e não faz parte do que é avaliado): dashboard com cena 3D, alertas e relatórios no WhatsApp (WAHA), servidor MCP com OAuth 2.1 para apps de IA, coletor Livoltek e deploy contínuo na VPS ([deploy.yml](.github/workflows/deploy.yml)).
 
 ## Itens do Nível A incorporados
 
@@ -216,7 +216,7 @@ packages/db            schema Drizzle + migrações + contas e configurações
 packages/observability logs (pino), métrica (prom-client) e health
 packages/solplanet     cliente da API Solplanet (assinatura Alibaba API Gateway)
 packages/livoltek      cliente da API Livoltek
-packages/whatsapp      cliente da Evolution API
+packages/whatsapp      cliente do WAHA
 docs/                  openapi.yaml, adr/, c4/, deploy.md, desempenho.md, ia.md
 k6/                    smoke test
 tests/                 Vitest (unitários + integração)
@@ -243,12 +243,12 @@ Consumo e rede só aparecem se a usina tiver medidor (`meterFlag`); bateria só 
 
 ## Deploy na VPS
 
-1. **Bancos** no Postgres que já existe:
+1. **Banco** no Postgres que já existe:
    ```bash
-   docker exec -it <container-postgres> psql -U <user> -c "create database solar;" -c "create database evolution;"
+   docker exec -it <container-postgres> psql -U <user> -c "create database solar;"
    docker network ls   # anote a rede do container do postgres → PG_NETWORK
    ```
-2. **Config**: copie o projeto, depois `cp .env.example .env` e preencha. O host no `DATABASE_URL` é o nome do container do Postgres.
+2. **Config**: copie o projeto, depois `cp .env.example .env` e preencha (inclusive `WAHA_URL` e `WAHA_API_KEY`). O host no `DATABASE_URL` é o nome do container do Postgres.
 3. **Subir**: `docker compose up -d --build`
 4. **Conectar o WhatsApp** (use um chip secundário): abra o dashboard → **Ajustes** → **Conectar** e leia o QR code em WhatsApp → Aparelhos conectados.
 5. **Destinatários**: em **Ajustes** → **Adicionar novo destinatário**. Com o WhatsApp conectado, aparece a lista dos seus grupos para escolher. Regras, horário do relatório e tarifa também ficam lá; o worker lê a cada ciclo.
